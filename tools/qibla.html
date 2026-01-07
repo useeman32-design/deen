@@ -57,6 +57,8 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
         }
 
         /* Page Loader Overlay */
@@ -396,12 +398,12 @@
         .compass-rose-line:nth-child(7) { transform: rotate(270deg); }
         .compass-rose-line:nth-child(8) { transform: rotate(315deg); }
 
-        /* Compass Needle - FIXED */
+        /* Compass Needle */
         .compass-needle {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) rotate(0deg);
             z-index: 10;
             transition: transform 0.1s ease-out;
             width: 100px;
@@ -415,7 +417,6 @@
             position: relative;
             width: 100px;
             height: 100px;
-            transform-origin: center center;
         }
 
         .needle {
@@ -467,7 +468,7 @@
             z-index: 6;
         }
 
-        /* Qibla Indicator - FIXED */
+        /* Qibla Indicator */
         .qibla-indicator {
             position: absolute;
             top: 50%;
@@ -839,6 +840,32 @@
             background-color: var(--medium-gray);
         }
 
+        /* Compass permission button */
+        .compass-permission-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 300px;
+            margin: 10px auto;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .compass-permission-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
+        }
+
         /* Footer */
         .qibla-footer {
             margin-top: 30px;
@@ -931,6 +958,67 @@
             color: var(--dark-gray);
             text-align: center;
         }
+        
+        /* Instruction overlay */
+        .instruction-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .instruction-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .instruction-content {
+            max-width: 400px;
+            padding: 20px;
+        }
+        
+        .instruction-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--accent-gold);
+        }
+        
+        .instruction-text {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .instruction-btn {
+            background: linear-gradient(135deg, var(--primary-green), #4CAF50);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .instruction-btn:hover {
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body class="light-theme">
@@ -944,6 +1032,21 @@
                 </div>
             </div>
             <div class="loader-text">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Instruction Overlay for iOS -->
+    <div class="instruction-overlay" id="iosInstructionOverlay">
+        <div class="instruction-content">
+            <h2 class="instruction-title">Enable Compass Access</h2>
+            <p class="instruction-text">To use the automatic compass feature on iOS:</p>
+            <ol style="text-align: left; margin: 20px 0; padding-left: 20px;">
+                <li style="margin-bottom: 10px;">Click the "Enable Compass" button below</li>
+                <li style="margin-bottom: 10px;">Allow access to Motion & Orientation when prompted</li>
+                <li style="margin-bottom: 10px;">Rotate your device to see the compass move automatically</li>
+            </ol>
+            <button class="instruction-btn" id="enableCompassBtn">Enable Compass</button>
+            <button class="instruction-btn" style="background: var(--dark-gray); margin-top: 15px;" id="skipCompassBtn">Skip & Use Manual Mode</button>
         </div>
     </div>
 
@@ -1049,7 +1152,7 @@
                                 <div class="compass-direction direction-nw">NW</div>
                             </div>
                             
-                            <!-- Qibla Indicator - FIXED POSITION -->
+                            <!-- Qibla Indicator -->
                             <div class="qibla-indicator" id="qiblaIndicator">
                                 <div class="qibla-text" id="qiblaText">QIBLA</div>
                                 <div class="kaaba-icon">
@@ -1057,7 +1160,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Compass Needle - FIXED POSITION -->
+                            <!-- Compass Needle -->
                             <div class="compass-needle" id="compassNeedle">
                                 <div class="needle-container" id="needleContainer">
                                     <div class="needle"></div>
@@ -1083,6 +1186,12 @@
                 <div class="status-message">
                     <div class="status-text" id="statusText">Click "Use My Location" to find Qibla direction</div>
                 </div>
+                
+                <!-- Compass Permission Button (shown only when needed) -->
+                <button class="compass-permission-btn" id="compassPermissionBtn" style="display: none;">
+                    <i class="fas fa-compass"></i>
+                    <span>Enable Automatic Compass</span>
+                </button>
                 
                 <!-- Accuracy Indicator -->
                 <div class="accuracy-indicator" id="accuracyIndicator">
@@ -1171,6 +1280,9 @@
         let compassActive = false;
         let lastCompassUpdate = 0;
         const COMPASS_UPDATE_INTERVAL = 100; // Update every 100ms for smooth animation
+        let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        let isAndroid = /Android/.test(navigator.userAgent);
+        let orientationPermissionGranted = false;
 
         // DOM Elements
         const backBtn = document.getElementById('backBtn');
@@ -1192,6 +1304,10 @@
         const countrySelect = document.getElementById('countrySelect');
         const citySuggestions = document.getElementById('citySuggestions');
         const accuracyIndicator = document.getElementById('accuracyIndicator');
+        const compassPermissionBtn = document.getElementById('compassPermissionBtn');
+        const iosInstructionOverlay = document.getElementById('iosInstructionOverlay');
+        const enableCompassBtn = document.getElementById('enableCompassBtn');
+        const skipCompassBtn = document.getElementById('skipCompassBtn');
 
         // Back button functionality
         backBtn.addEventListener('click', function() {
@@ -1306,9 +1422,9 @@
                     // Calculate Qibla direction
                     currentQiblaAngle = calculateQiblaDirection(currentLat, currentLng);
                     
-                    // Enable compass
+                    // Try to enable compass if not already active
                     if (!compassActive) {
-                        startCompass();
+                        setupDeviceOrientation();
                     }
                     
                     // Update display
@@ -1350,9 +1466,9 @@
                         currentLng = KAABA_LNG;
                         currentQiblaAngle = 0; // Qibla direction from Mecca to Kaaba is 0 degrees
                         
-                        // Enable compass
+                        // Try to enable compass if not already active
                         if (!compassActive) {
-                            startCompass();
+                            setupDeviceOrientation();
                         }
                         
                         updateCompassDisplay();
@@ -1417,9 +1533,9 @@
                         // Calculate Qibla direction
                         currentQiblaAngle = calculateQiblaDirection(currentLat, currentLng);
                         
-                        // Enable compass if not already active
+                        // Try to enable compass if not already active
                         if (!compassActive) {
-                            startCompass();
+                            setupDeviceOrientation();
                         }
                         
                         // Update display
@@ -1464,37 +1580,35 @@
             }, 3000); // 3 second calibration
         }
 
-        // Start compass functionality
-        function startCompass() {
+        // Setup real device orientation - FIXED VERSION
+        function setupDeviceOrientation() {
             if (compassActive) return;
             
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13+ devices
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            setupDeviceOrientation();
-                        } else {
-                            updateStatus("Compass permission denied. Using simulation mode.", "error");
-                            setupCompassSimulation();
-                        }
-                    })
-                    .catch(console.error);
-            } else if (window.DeviceOrientationEvent) {
-                // Non-iOS devices
-                setupDeviceOrientation();
+            // Check if deviceorientation is supported
+            if (window.DeviceOrientationEvent) {
+                // For iOS 13+, we need to request permission
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    // Show iOS instruction overlay
+                    iosInstructionOverlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    // Non-iOS devices or iOS < 13
+                    startDeviceOrientationListener();
+                }
             } else {
-                updateStatus("Device orientation not supported. Using simulation mode.", "error");
+                updateStatus("Device orientation not supported on this device.", "error");
                 setupCompassSimulation();
             }
         }
 
-        // Setup real device orientation
-        function setupDeviceOrientation() {
+        // Start device orientation listener
+        function startDeviceOrientationListener() {
             window.addEventListener('deviceorientation', handleDeviceOrientation);
             compassActive = true;
+            orientationPermissionGranted = true;
             accuracyIndicator.textContent = "Compass: Active (using device sensors)";
             updateStatus("Compass activated! Rotate your device to find Qibla.", "success");
+            compassPermissionBtn.style.display = 'none';
         }
 
         // Handle device orientation data
@@ -1503,31 +1617,39 @@
             if (now - lastCompassUpdate < COMPASS_UPDATE_INTERVAL) return;
             lastCompassUpdate = now;
             
-            if (event.absolute !== undefined && event.absolute === true) {
-                // Use absolute orientation if available
-                if (event.alpha !== null) {
-                    currentDeviceHeading = event.alpha; // Compass direction in degrees (0-360)
-                    
-                    // Update accuracy indicator
-                    if (event.webkitCompassAccuracy !== undefined) {
-                        accuracyIndicator.textContent = `Compass: Active (accuracy: ${event.webkitCompassAccuracy.toFixed(1)}°)`;
-                    }
-                    
-                    updateCompassDisplay();
-                }
-            } else if (event.webkitCompassHeading !== undefined) {
+            let heading = null;
+            
+            // Check different properties for different browsers/devices
+            if (event.webkitCompassHeading !== undefined) {
                 // iOS Safari
-                currentDeviceHeading = event.webkitCompassHeading;
-                
-                // Update accuracy indicator
+                heading = event.webkitCompassHeading;
                 if (event.webkitCompassAccuracy !== undefined) {
                     accuracyIndicator.textContent = `Compass: Active (accuracy: ${event.webkitCompassAccuracy.toFixed(1)}°)`;
                 }
-                
-                updateCompassDisplay();
             } else if (event.alpha !== null) {
                 // Android and other devices
-                currentDeviceHeading = event.alpha;
+                heading = event.alpha;
+                
+                // On some Android devices, we need to adjust the heading
+                if (event.gamma !== null && event.beta !== null) {
+                    // Use tilt compensation for better accuracy
+                    const beta = event.beta;  // Front-to-back tilt in degrees
+                    const gamma = event.gamma; // Left-to-right tilt in degrees
+                    
+                    // Basic tilt compensation (simplified)
+                    const tiltCompensation = Math.min(Math.abs(beta), Math.abs(gamma)) / 90;
+                    if (tiltCompensation > 0.5) {
+                        accuracyIndicator.textContent = "Compass: Tilt device for better accuracy";
+                    } else {
+                        accuracyIndicator.textContent = "Compass: Active";
+                    }
+                } else {
+                    accuracyIndicator.textContent = "Compass: Active";
+                }
+            }
+            
+            if (heading !== null) {
+                currentDeviceHeading = heading;
                 updateCompassDisplay();
             }
         }
@@ -1535,8 +1657,8 @@
         // Setup compass simulation for devices without orientation support
         function setupCompassSimulation() {
             compassActive = true;
-            accuracyIndicator.textContent = "Compass: Simulation mode (drag to rotate)";
-            updateStatus("Drag on the compass to simulate device rotation.", "success");
+            accuracyIndicator.textContent = "Compass: Manual mode (drag to rotate)";
+            updateStatus("Drag on the compass to rotate the needle.", "success");
             
             let isDragging = false;
             let startAngle = 0;
@@ -1599,6 +1721,32 @@
             compass.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
             });
+        }
+
+        // Request iOS permission
+        function requestIOSPermission() {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        iosInstructionOverlay.classList.remove('active');
+                        document.body.style.overflow = 'auto';
+                        
+                        if (permissionState === 'granted') {
+                            startDeviceOrientationListener();
+                            updateStatus("Compass permission granted! Rotate your device.", "success");
+                        } else {
+                            updateStatus("Compass permission denied. Using manual mode.", "error");
+                            setupCompassSimulation();
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error requesting permission:", error);
+                        iosInstructionOverlay.classList.remove('active');
+                        document.body.style.overflow = 'auto';
+                        updateStatus("Error requesting compass permission. Using manual mode.", "error");
+                        setupCompassSimulation();
+                    });
+            }
         }
 
         // Initialize city suggestions
@@ -1704,6 +1852,23 @@
             }
         });
 
+        // Compass permission button
+        compassPermissionBtn.addEventListener('click', function() {
+            setupDeviceOrientation();
+        });
+
+        // iOS instruction buttons
+        enableCompassBtn.addEventListener('click', function() {
+            requestIOSPermission();
+        });
+
+        skipCompassBtn.addEventListener('click', function() {
+            iosInstructionOverlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            updateStatus("Using manual compass mode. Drag to rotate.", "success");
+            setupCompassSimulation();
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             // Close modal with Escape
@@ -1712,6 +1877,23 @@
                 document.body.style.overflow = 'auto';
             }
         });
+
+        // Test device orientation support on load
+        function testDeviceOrientation() {
+            if (window.DeviceOrientationEvent) {
+                // Show compass permission button for iOS and Android
+                if (isIOS || isAndroid) {
+                    compassPermissionBtn.style.display = 'flex';
+                    updateStatus("Tap 'Enable Automatic Compass' for automatic rotation", "success");
+                } else {
+                    // For desktop, try to enable automatically
+                    setupDeviceOrientation();
+                }
+            } else {
+                updateStatus("Device orientation not supported. Using manual mode.", "error");
+                setupCompassSimulation();
+            }
+        }
 
         // Initialize
         function init() {
@@ -1728,8 +1910,8 @@
             currentQiblaAngle = calculateQiblaDirection(currentLat, currentLng);
             currentCity = "Mecca, Saudi Arabia";
             
-            // Start compass in simulation mode initially
-            setupCompassSimulation();
+            // Test device orientation support
+            testDeviceOrientation();
             
             // Check if we have location permission already
             if (navigator.permissions) {
