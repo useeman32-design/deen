@@ -938,7 +938,7 @@
                     <!-- Audio Player -->
                     <div class="audio-player">
                         <audio id="adhanAudio" preload="auto">
-                            <source src="../data/adhan/azan2.mp3" type="audio/mpeg">
+                            <source src="https://www.islamcan.com/audio/adhan/azan2.mp3" type="audio/mpeg">
                             Your browser does not support the audio element.
                         </audio>
                     </div>
@@ -1011,7 +1011,7 @@
                 <div class="next-prayer-info">
                     <i class="fas fa-bell"></i>
                     <div>
-                        <div class="next-prayer-name">Next: Loading...</div>
+                        <div class="next-prayer-name" id="nextPrayerName">Next: Loading...</div>
                         <div class="next-prayer-countdown" id="nextPrayerCountdown">Loading...</div>
                     </div>
                 </div>
@@ -1029,7 +1029,7 @@
 
     <script>
         // ============================================
-        // PRAYER TIMES WITH CITY NAME - FIXED VERSION
+        // PRAYER TIMES - COMPLETELY FIXED VERSION
         // ============================================
 
         // DOM Elements
@@ -1041,6 +1041,23 @@
         const errorMessage = document.getElementById('errorMessage');
         const errorText = document.getElementById('errorText');
         const refreshLocationBtn = document.getElementById('refreshLocationBtn');
+        const nextPrayerBanner = document.getElementById('nextPrayerBanner');
+        const nextPrayerName = document.getElementById('nextPrayerName');
+        const nextPrayerCountdown = document.getElementById('nextPrayerCountdown');
+        const nextPrayerTime = document.getElementById('nextPrayerTime');
+        
+        // Modal Elements
+        const settingsModal = document.getElementById('settingsModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalPrayerName = document.getElementById('modalPrayerName');
+        const adjustedTime = document.getElementById('adjustedTime');
+        const decreaseTime = document.getElementById('decreaseTime');
+        const increaseTime = document.getElementById('increaseTime');
+        const adhanSoundSelect = document.getElementById('adhanSoundSelect');
+        const resetSettings = document.getElementById('resetSettings');
+        const saveSettings = document.getElementById('saveSettings');
+        const adhanAudio = document.getElementById('adhanAudio');
+        const playAdhanBtn = document.getElementById('playAdhanBtn');
 
         // Application State
         const state = {
@@ -1049,40 +1066,28 @@
                 latitude: null,
                 longitude: null,
                 city: "Loading...",
-                country: ""
+                country: "",
+                autoDetected: false
             },
             prayerTimes: {},
             prayers: [
-                { name: "Fajr", icon: "🕋", timeKey: "Fajr" },
-                { name: "Dhuhr", icon: "☀️", timeKey: "Dhuhr" },
-                { name: "Asr", icon: "🌤", timeKey: "Asr" },
-                { name: "Maghrib", icon: "🌇", timeKey: "Maghrib" },
-                { name: "Isha", icon: "🌙", timeKey: "Isha" }
+                { name: "Fajr", icon: "🕋", timeKey: "Fajr", index: 0 },
+                { name: "Dhuhr", icon: "☀️", timeKey: "Dhuhr", index: 1 },
+                { name: "Asr", icon: "🌤", timeKey: "Asr", index: 2 },
+                { name: "Maghrib", icon: "🌇", timeKey: "Maghrib", index: 3 },
+                { name: "Isha", icon: "🌙", timeKey: "Isha", index: 4 }
             ],
-            // Default prayer times for major Nigerian cities if location fails
-            defaultPrayerTimes: {
-                "Lagos, Nigeria": {
-                    Fajr: "05:30",
-                    Dhuhr: "12:45",
-                    Asr: "16:00",
-                    Maghrib: "18:45",
-                    Isha: "20:00"
-                },
-                "Abuja, Nigeria": {
-                    Fajr: "05:20",
-                    Dhuhr: "12:40",
-                    Asr: "16:05",
-                    Maghrib: "18:50",
-                    Isha: "20:05"
-                },
-                "Kano, Nigeria": {
-                    Fajr: "05:15",
-                    Dhuhr: "12:35",
-                    Asr: "16:10",
-                    Maghrib: "18:55",
-                    Isha: "20:10"
-                }
-            }
+            currentPrayer: null,
+            nextPrayer: null,
+            adjustments: {
+                Fajr: 0,
+                Dhuhr: 0,
+                Asr: 0,
+                Maghrib: 0,
+                Isha: 0
+            },
+            modalPrayer: null,
+            countdownInterval: null
         };
 
         // Show error message
@@ -1134,15 +1139,174 @@
             return `${formattedHour}:${minutes} ${ampm}`;
         }
 
+        // Get adjusted time for a prayer
+        function getAdjustedTime(prayerKey) {
+            const baseTime = state.prayerTimes[prayerKey];
+            if (!baseTime || baseTime === '--:--') return '--:--';
+            
+            const adjustment = state.adjustments[prayerKey] || 0;
+            if (adjustment === 0) return baseTime;
+            
+            const [hours, minutes] = baseTime.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes + adjustment, 0, 0);
+            
+            const adjustedHours = date.getHours().toString().padStart(2, '0');
+            const adjustedMinutes = date.getMinutes().toString().padStart(2, '0');
+            
+            return `${adjustedHours}:${adjustedMinutes}`;
+        }
+
+        // Convert time string to minutes since midnight
+        function timeToMinutes(timeStr) {
+            if (!timeStr || timeStr === '--:--') return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        // Determine current and next prayer
+        function findCurrentAndNextPrayer() {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            let current = null;
+            let next = null;
+            let nextTimeInMinutes = Infinity;
+            
+            // Get all prayer times
+            const prayerTimes = state.prayers.map(prayer => {
+                const time = getAdjustedTime(prayer.timeKey);
+                const minutes = timeToMinutes(time);
+                return {
+                    ...prayer,
+                    time,
+                    minutes
+                };
+            }).filter(p => p.minutes > 0);
+            
+            if (prayerTimes.length === 0) {
+                return { current: null, next: null };
+            }
+            
+            // Sort by time
+            prayerTimes.sort((a, b) => a.minutes - b.minutes);
+            
+            // Find current prayer (prayer that has started but not yet ended)
+            for (let i = 0; i < prayerTimes.length; i++) {
+                const currentPrayer = prayerTimes[i];
+                const nextPrayer = prayerTimes[(i + 1) % prayerTimes.length];
+                
+                // If current time is between this prayer and the next
+                if (currentMinutes >= currentPrayer.minutes && 
+                    currentMinutes < nextPrayer.minutes) {
+                    current = currentPrayer.name;
+                    next = nextPrayer.name;
+                    break;
+                }
+            }
+            
+            // If no current prayer found (before first prayer or after last prayer)
+            if (!current) {
+                // Check if before first prayer
+                if (currentMinutes < prayerTimes[0].minutes) {
+                    next = prayerTimes[0].name;
+                }
+                // Check if after last prayer
+                else if (currentMinutes >= prayerTimes[prayerTimes.length - 1].minutes) {
+                    current = prayerTimes[prayerTimes.length - 1].name;
+                    next = prayerTimes[0].name;
+                }
+            }
+            
+            state.currentPrayer = current;
+            state.nextPrayer = next;
+            
+            return { current, next };
+        }
+
+        // Calculate countdown to next prayer
+        function calculateCountdown(nextPrayerName) {
+            if (!nextPrayerName) return "Calculating...";
+            
+            const nextPrayer = state.prayers.find(p => p.name === nextPrayerName);
+            if (!nextPrayer) return "Prayer not found";
+            
+            const nextTimeStr = getAdjustedTime(nextPrayer.timeKey);
+            if (!nextTimeStr || nextTimeStr === '--:--') return "Time not available";
+            
+            const now = new Date();
+            const [nextHours, nextMinutes] = nextTimeStr.split(':').map(Number);
+            
+            let nextTime = new Date();
+            nextTime.setHours(nextHours, nextMinutes, 0, 0);
+            
+            // If the next prayer time has already passed today, it's tomorrow
+            if (nextTime < now) {
+                nextTime.setDate(nextTime.getDate() + 1);
+            }
+            
+            const diffMs = nextTime - now;
+            
+            if (diffMs <= 0) return "Now";
+            
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (diffHours > 0) {
+                return `${diffHours}h ${diffMinutes}m`;
+            } else {
+                return `${diffMinutes}m`;
+            }
+        }
+
+        // Update countdowns
+        function updateCountdowns() {
+            const { current, next } = findCurrentAndNextPrayer();
+            
+            // Update next prayer banner
+            if (next) {
+                const nextPrayerObj = state.prayers.find(p => p.name === next);
+                if (nextPrayerObj) {
+                    nextPrayerBanner.style.display = 'flex';
+                    nextPrayerName.textContent = `Next: ${next}`;
+                    nextPrayerCountdown.textContent = calculateCountdown(next);
+                    nextPrayerTime.textContent = formatTime(getAdjustedTime(nextPrayerObj.timeKey));
+                }
+            } else {
+                nextPrayerBanner.style.display = 'none';
+            }
+            
+            // Update countdowns on cards
+            document.querySelectorAll('.prayer-card').forEach(card => {
+                const prayerName = card.querySelector('.prayer-name').textContent.split(' ')[0];
+                const countdownElement = card.querySelector('.countdown');
+                
+                if (prayerName === state.nextPrayer) {
+                    countdownElement.textContent = calculateCountdown(prayerName);
+                } else {
+                    countdownElement.textContent = '—';
+                }
+            });
+        }
+
         // Render prayer cards
         function renderPrayerCards() {
             prayerCards.innerHTML = '';
+            
+            const { current, next } = findCurrentAndNextPrayer();
             
             state.prayers.forEach(prayer => {
                 const card = document.createElement('div');
                 card.className = 'prayer-card';
                 
-                const prayerTime = state.prayerTimes[prayer.timeKey] || '--:--';
+                const isCurrent = prayer.name === current;
+                const isNext = prayer.name === next && !isCurrent;
+                
+                if (isCurrent) card.classList.add('current');
+                if (isNext) card.classList.add('next');
+                
+                const adjustedTime = getAdjustedTime(prayer.timeKey);
+                const countdownText = isNext ? calculateCountdown(prayer.name) : '—';
                 
                 card.innerHTML = `
                     <div class="prayer-icon ${prayer.name.toLowerCase()}">
@@ -1150,11 +1314,14 @@
                     </div>
                     <div class="prayer-content">
                         <div class="prayer-header">
-                            <div class="prayer-name">${prayer.name}</div>
-                            <div class="prayer-time">${formatTime(prayerTime)}</div>
+                            <div class="prayer-name">
+                                ${prayer.name}
+                                ${isCurrent ? '<span class="current-prayer-indicator"><i class="fas fa-check-circle"></i> Current</span>' : ''}
+                            </div>
+                            <div class="prayer-time">${formatTime(adjustedTime)}</div>
                         </div>
                         <div class="prayer-footer">
-                            <div class="countdown">—</div>
+                            <div class="countdown">${countdownText}</div>
                             <button class="adhan-toggle">
                                 <i class="fas fa-bell"></i>
                             </button>
@@ -1162,223 +1329,184 @@
                     </div>
                 `;
                 
+                // Add click event to open modal
+                card.addEventListener('click', () => openSettingsModal(prayer));
+                
                 prayerCards.appendChild(card);
             });
         }
 
-        // Get user's real location - IMPROVED VERSION
+        // Open settings modal
+        function openSettingsModal(prayer) {
+            state.modalPrayer = prayer;
+            
+            modalPrayerName.textContent = `${prayer.name} Settings`;
+            adjustedTime.textContent = getAdjustedTime(prayer.timeKey);
+            
+            settingsModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close settings modal
+        function closeSettingsModal() {
+            settingsModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            state.modalPrayer = null;
+            
+            // Stop audio if playing
+            if (!adhanAudio.paused) {
+                adhanAudio.pause();
+                adhanAudio.currentTime = 0;
+                playAdhanBtn.innerHTML = '<i class="fas fa-play"></i><span>Play Adhan</span>';
+                playAdhanBtn.classList.remove('playing');
+            }
+        }
+
+        // Get user's real location - FIXED VERSION
         function getUserLocation() {
-            // First try to get location from localStorage
-            const savedLocation = localStorage.getItem('userLocation');
+            // First try to get from localStorage
+            const savedLocation = localStorage.getItem('prayerLocation');
             if (savedLocation) {
                 try {
                     const locationData = JSON.parse(savedLocation);
-                    if (locationData.city && locationData.country) {
+                    if (locationData.latitude && locationData.longitude) {
                         state.location = locationData;
-                        locationText.textContent = `${locationData.city}, ${locationData.country}`;
+                        locationText.textContent = locationData.name || "Saved Location";
                         fetchPrayerTimes(locationData.latitude, locationData.longitude);
                         return;
                     }
                 } catch (e) {
-                    console.log("Could not load saved location:", e);
+                    console.log("Could not load saved location");
                 }
             }
 
             if (!navigator.geolocation) {
-                showError("Geolocation is not supported by your browser. Using default prayer times.");
-                useDefaultNigeriaLocation();
+                showError("Geolocation not supported. Using default location.");
+                useDefaultLocation();
                 return;
             }
 
-            // Show loading message
-            locationText.textContent = "Getting your location...";
+            locationText.textContent = "Detecting location...";
             
-            // Try multiple geolocation methods
-            const geolocationOptions = [
-                {
-                    enableHighAccuracy: false, // Try without high accuracy first (faster)
-                    timeout: 8000,
-                    maximumAge: 60000 // 1 minute cache
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    console.log("Got coordinates:", lat, lng);
+                    
+                    // Get location name using a reliable reverse geocoding service
+                    await getLocationName(lat, lng);
+                    
+                    // Save location
+                    state.location.latitude = lat;
+                    state.location.longitude = lng;
+                    state.location.autoDetected = true;
+                    
+                    localStorage.setItem('prayerLocation', JSON.stringify(state.location));
+                    
+                    // Fetch prayer times
+                    await fetchPrayerTimes(lat, lng);
+                    
+                    // Update UI
+                    locationText.textContent = state.location.name;
+                    hideError();
+                    
+                    // Show auto location indicator
+                    document.getElementById('autoLocationIndicator').style.display = 'inline-flex';
+                    
+                },
+                (error) => {
+                    console.error("Geolocation error:", error);
+                    
+                    let errorMsg = "Location access ";
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg += "denied. Using default location.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg += "unavailable. Using default location.";
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg += "timed out. Using default location.";
+                            break;
+                        default:
+                            errorMsg += "failed. Using default location.";
+                    }
+                    
+                    showError(errorMsg);
+                    useDefaultLocation();
                 },
                 {
-                    enableHighAccuracy: true, // Then try with high accuracy
+                    enableHighAccuracy: true,
                     timeout: 10000,
                     maximumAge: 0
                 }
-            ];
-
-            let currentAttempt = 0;
-
-            function tryGeolocation() {
-                if (currentAttempt >= geolocationOptions.length) {
-                    // All attempts failed
-                    showError("Could not get your location. Using default prayer times.");
-                    useDefaultNigeriaLocation();
-                    return;
-                }
-
-                const options = geolocationOptions[currentAttempt];
-                currentAttempt++;
-
-                navigator.geolocation.getCurrentPosition(
-                    // Success callback
-                    async (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        
-                        console.log("Got user location coordinates:", lat, lng);
-                        
-                        // Get city name using ipapi (free, no CORS issues)
-                        await getCityNameFromCoordinates(lat, lng);
-                        
-                        // Fetch prayer times for this location
-                        await fetchPrayerTimes(lat, lng);
-                        
-                        // Hide loader
-                        pageLoader.classList.add('hidden');
-                    },
-                    // Error callback
-                    (error) => {
-                        console.error("Geolocation error:", error);
-                        
-                        if (currentAttempt < geolocationOptions.length) {
-                            // Try next method
-                            setTimeout(tryGeolocation, 1000);
-                        } else {
-                            // All attempts failed
-                            let errorMsg = "";
-                            switch(error.code) {
-                                case error.PERMISSION_DENIED:
-                                    errorMsg = "Location permission denied. Please allow location access.";
-                                    break;
-                                case error.POSITION_UNAVAILABLE:
-                                    errorMsg = "Location information unavailable.";
-                                    break;
-                                case error.TIMEOUT:
-                                    errorMsg = "Location request timed out.";
-                                    break;
-                                default:
-                                    errorMsg = "Could not get your location.";
-                            }
-                            
-                            showError(errorMsg + " Using default prayer times.");
-                            useDefaultNigeriaLocation();
-                        }
-                    },
-                    options
-                );
-            }
-
-            // Start first attempt
-            tryGeolocation();
+            );
         }
 
-        // Get city name from coordinates using ipapi.co
-        async function getCityNameFromCoordinates(lat, lng) {
+        // Get location name from coordinates - FIXED VERSION
+        async function getLocationName(lat, lng) {
             try {
-                // First try ipapi for reverse geocoding
-                const response = await fetch(`https://ipapi.co/json/`);
+                // Try using OpenStreetMap Nominatim with CORS proxy
+                const proxyUrl = 'https://corsproxy.io/?';
+                const targetUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+                
+                const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'PrayerTimesApp/1.0'
+                    }
+                });
                 
                 if (!response.ok) {
-                    throw new Error('ipapi request failed');
+                    throw new Error('Failed to fetch location name');
                 }
                 
                 const data = await response.json();
                 
-                if (data.city && data.country_name) {
-                    state.location.city = data.city;
-                    state.location.country = data.country_name;
-                    state.location.name = `${data.city}, ${data.country_name}`;
-                    state.location.latitude = lat;
-                    state.location.longitude = lng;
+                if (data.address) {
+                    const city = data.address.city || data.address.town || data.address.village || data.address.county;
+                    const stateRegion = data.address.state;
+                    const country = data.address.country;
                     
-                    // Save to localStorage for future use
-                    localStorage.setItem('userLocation', JSON.stringify(state.location));
-                    
-                    locationText.textContent = state.location.name;
-                    return;
-                }
-            } catch (error) {
-                console.log("Could not get city name from ipapi:", error);
-            }
-            
-            // Fallback: Use a geocoding service that works with CORS
-            try {
-                // Try using a CORS proxy with OpenStreetMap
-                const proxyUrl = 'https://corsproxy.io/?';
-                const targetUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`;
-                
-                const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    if (data.address) {
-                        const city = data.address.city || data.address.town || data.address.village;
-                        const country = data.address.country;
-                        
-                        if (city && country) {
-                            state.location.city = city;
-                            state.location.country = country;
-                            state.location.name = `${city}, ${country}`;
-                        } else {
-                            state.location.name = `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
-                        }
+                    if (city && country) {
+                        state.location.name = `${city}, ${country}`;
+                        state.location.city = city;
+                        state.location.country = country;
+                    } else if (stateRegion && country) {
+                        state.location.name = `${stateRegion}, ${country}`;
+                        state.location.city = stateRegion;
+                        state.location.country = country;
                     } else {
-                        state.location.name = `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
+                        state.location.name = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
                     }
                 } else {
-                    state.location.name = `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
+                    state.location.name = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
                 }
                 
-                state.location.latitude = lat;
-                state.location.longitude = lng;
-                
-                // Save to localStorage
-                localStorage.setItem('userLocation', JSON.stringify(state.location));
-                
-                locationText.textContent = state.location.name;
-                
             } catch (error) {
-                console.log("Could not get city name from geocoding service:", error);
-                
-                // Final fallback: Use coordinates with country guess
-                state.location.name = `Location in Nigeria (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
-                state.location.city = "Nigeria";
-                state.location.country = "Nigeria";
-                state.location.latitude = lat;
-                state.location.longitude = lng;
-                
-                locationText.textContent = state.location.name;
+                console.error("Error getting location name:", error);
+                // Fallback: Use coordinates
+                state.location.name = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                state.location.city = "Unknown";
+                state.location.country = "Unknown";
             }
         }
 
-        // Use default Nigeria location if geolocation fails
-        function useDefaultNigeriaLocation() {
-            // Use Lagos, Nigeria as default
+        // Use default location (Lagos, Nigeria)
+        function useDefaultLocation() {
             state.location.name = "Lagos, Nigeria";
             state.location.city = "Lagos";
             state.location.country = "Nigeria";
             state.location.latitude = 6.5244;
             state.location.longitude = 3.3792;
+            state.location.autoDetected = false;
             
             locationText.textContent = state.location.name;
+            document.getElementById('autoLocationIndicator').style.display = 'none';
             
-            // Use default prayer times for Lagos
-            state.prayerTimes = state.defaultPrayerTimes["Lagos, Nigeria"];
-            
-            // Update dates
-            updateDates();
-            
-            // Render prayer times
-            renderPrayerCards();
-            
-            // Hide loader
-            setTimeout(() => {
-                pageLoader.classList.add('hidden');
-            }, 1000);
-            
-            showNotification("Using default prayer times for Lagos, Nigeria");
+            fetchPrayerTimes(state.location.latitude, state.location.longitude);
         }
 
         // Update dates
@@ -1396,6 +1524,7 @@
 
         // Calculate Hijri date
         function calculateHijriDate(gregorianDate) {
+            // Simplified calculation - for production use a proper library
             const hijriEpoch = 227014;
             const gregorianEpoch = new Date(622, 6, 16);
             const diffDays = Math.floor((gregorianDate - gregorianEpoch) / (1000 * 60 * 60 * 24));
@@ -1418,20 +1547,27 @@
             return `${day} ${month} ${year} AH`;
         }
 
-        // Fetch prayer times from AlAdhan API
+        // Fetch prayer times from AlAdhan API - FIXED VERSION
         async function fetchPrayerTimes(lat, lng) {
             try {
                 // Show loading state
                 renderLoadingCards();
                 
-                // Fetch from AlAdhan API
+                // Get today's date
                 const today = new Date();
-                const timestamp = Math.floor(today.getTime() / 1000);
+                const day = today.getDate();
+                const month = today.getMonth() + 1;
+                const year = today.getFullYear();
                 
-                console.log("Fetching prayer times for:", lat, lng);
-                
+                // Use AlAdhan API
                 const response = await fetch(
-                    `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${lat}&longitude=${lng}&method=2`
+                    `https://api.aladhan.com/v1/timings/${day}-${month}-${year}?latitude=${lat}&longitude=${lng}&method=2&school=1`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    }
                 );
                 
                 if (!response.ok) {
@@ -1443,8 +1579,6 @@
                 if (data.code !== 200) {
                     throw new Error(`API error: ${data.status}`);
                 }
-                
-                console.log("Prayer times API response:", data);
                 
                 // Get prayer times
                 const timings = data.data.timings;
@@ -1467,29 +1601,29 @@
                 renderPrayerCards();
                 hideError();
                 
+                // Start countdown updates
+                startCountdownUpdates();
+                
                 showNotification(`Prayer times loaded for ${state.location.name}`);
                 
             } catch (error) {
                 console.error("Error fetching prayer times:", error);
                 
-                // Use default prayer times based on location
-                const locationKey = `${state.location.city}, ${state.location.country}`;
-                if (state.defaultPrayerTimes[locationKey]) {
-                    state.prayerTimes = state.defaultPrayerTimes[locationKey];
-                    showError("Using approximate prayer times for your city.");
-                } else {
-                    // Use Lagos as fallback
-                    state.prayerTimes = state.defaultPrayerTimes["Lagos, Nigeria"];
-                    showError("Using default prayer times for Lagos, Nigeria.");
-                }
+                // Use default prayer times
+                state.prayerTimes = {
+                    Fajr: "05:20",
+                    Dhuhr: "12:45",
+                    Asr: "16:00",
+                    Maghrib: "18:45",
+                    Isha: "20:00"
+                };
                 
-                // Update dates manually
-                updateDates();
-                
-                // Render prayer times
+                showError("Using approximate prayer times. Check your connection.");
                 renderPrayerCards();
+                updateDates();
+                startCountdownUpdates();
             } finally {
-                // Hide loader after a short delay
+                // Hide loader
                 setTimeout(() => {
                     pageLoader.classList.add('hidden');
                 }, 500);
@@ -1526,10 +1660,26 @@
             });
         }
 
+        // Start countdown updates
+        function startCountdownUpdates() {
+            // Clear existing interval
+            if (state.countdownInterval) {
+                clearInterval(state.countdownInterval);
+            }
+            
+            // Update immediately
+            updateCountdowns();
+            
+            // Then update every minute
+            state.countdownInterval = setInterval(() => {
+                updateCountdowns();
+            }, 60000);
+        }
+
         // Refresh location
         function refreshLocation() {
             // Clear saved location
-            localStorage.removeItem('userLocation');
+            localStorage.removeItem('prayerLocation');
             
             // Show loader
             pageLoader.classList.remove('hidden');
@@ -1547,16 +1697,96 @@
             // Start by getting user location
             getUserLocation();
             
-            // Set up back button
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Initial render
+            renderLoadingCards();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Back button
             document.getElementById('backBtn').addEventListener('click', () => {
                 window.history.back();
             });
             
-            // Set up refresh button
+            // Refresh button
             refreshLocationBtn.addEventListener('click', refreshLocation);
             
-            // Initial render
-            renderLoadingCards();
+            // Modal controls
+            modalClose.addEventListener('click', closeSettingsModal);
+            settingsModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeSettingsModal();
+                }
+            });
+            
+            // Time adjustment buttons
+            decreaseTime.addEventListener('click', () => {
+                if (state.modalPrayer) {
+                    state.adjustments[state.modalPrayer.timeKey] = (state.adjustments[state.modalPrayer.timeKey] || 0) - 1;
+                    adjustedTime.textContent = getAdjustedTime(state.modalPrayer.timeKey);
+                }
+            });
+            
+            increaseTime.addEventListener('click', () => {
+                if (state.modalPrayer) {
+                    state.adjustments[state.modalPrayer.timeKey] = (state.adjustments[state.modalPrayer.timeKey] || 0) + 1;
+                    adjustedTime.textContent = getAdjustedTime(state.modalPrayer.timeKey);
+                }
+            });
+            
+            // Save settings
+            saveSettings.addEventListener('click', () => {
+                if (state.modalPrayer) {
+                    // Save adjustments to localStorage
+                    localStorage.setItem('prayerAdjustments', JSON.stringify(state.adjustments));
+                    
+                    // Update display
+                    renderPrayerCards();
+                    closeSettingsModal();
+                    
+                    showNotification(`${state.modalPrayer.name} settings saved`);
+                }
+            });
+            
+            // Reset settings
+            resetSettings.addEventListener('click', () => {
+                if (state.modalPrayer) {
+                    state.adjustments[state.modalPrayer.timeKey] = 0;
+                    adjustedTime.textContent = state.prayerTimes[state.modalPrayer.timeKey] || '--:--';
+                    showNotification(`${state.modalPrayer.name} settings reset`);
+                }
+            });
+            
+            // Adhan audio controls
+            playAdhanBtn.addEventListener('click', () => {
+                if (adhanAudio.paused) {
+                    adhanAudio.play();
+                    playAdhanBtn.innerHTML = '<i class="fas fa-pause"></i><span>Pause Adhan</span>';
+                    playAdhanBtn.classList.add('playing');
+                } else {
+                    adhanAudio.pause();
+                    playAdhanBtn.innerHTML = '<i class="fas fa-play"></i><span>Play Adhan</span>';
+                    playAdhanBtn.classList.remove('playing');
+                }
+            });
+            
+            adhanAudio.addEventListener('ended', () => {
+                playAdhanBtn.innerHTML = '<i class="fas fa-play"></i><span>Play Adhan</span>';
+                playAdhanBtn.classList.remove('playing');
+            });
+            
+            // Load saved adjustments
+            const savedAdjustments = localStorage.getItem('prayerAdjustments');
+            if (savedAdjustments) {
+                try {
+                    state.adjustments = JSON.parse(savedAdjustments);
+                } catch (e) {
+                    console.error('Error parsing saved adjustments:', e);
+                }
+            }
         }
 
         // Start when page loads
