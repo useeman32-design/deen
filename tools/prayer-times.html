@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayer Times | Islamic App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        :root {
+            --primary-green: #1D6F42;
+            --light-green: #E8F5E9;
+            --accent-gold: #D4AF37;
+            --white: #FFFFFF;
+            --light-gray: #F5F5F5;
+            --medium-gray: #E0E0E0;
+            --dark-gray: #757575;
+            --text-dark: #333333;
+            --prayer-blue: #1976D2;
+            --current-prayer: #1D6F42;
+            --next-prayer: #D4AF37;
+            --card-bg: #FFFFFF;
+        }
+
+        /* Dark Theme Variables */
+        .dark-theme {
+            --primary-green: #2ecc71;
+            --light-green: #1a2526;
+            --accent-gold: #f39c12;
+            --white: #2c3e50;
+            --light-gray: #34495e;
+            --medium-gray: #4a6572;
+            --dark-gray: #bdc3c7;
+            --text-dark: #ecf0f1;
+            --prayer-blue: #3498db;
+            --current-prayer: #27ae60;
+            --next-prayer: #f39c12;
+            --card-bg: #2c3e50;
+        }
+
+        body {
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+            max-width: 100%;
+            margin: 0 auto;
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Page Loader */
+        #pageLoader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #pageLoader.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .islamic-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .loader-crescent {
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+
+        .crescent {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-green), var(--accent-gold));
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            animation: crescentFloat 3s ease-in-out infinite;
+        }
+
+        .crescent::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 60px;
+            height: 60px;
+            background-color: rgba(0, 0, 0, 0.95);
+            border-radius: 50%;
+        }
+
+        .loader-star {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: var(--accent-gold);
+            font-size: 24px;
+            animation: starTwinkle 2s ease-in-out infinite;
+        }
+
+        .loader-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            animation: textPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes crescentFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        @keyframes starTwinkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+
+        @keyframes textPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .page-content {
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+            animation-delay: 0.1s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 100%;
+            }
+        }
+
+        /* Top Section */
+        .top-section {
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .top-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(29, 111, 66, 0.9) 0%, rgba(29, 111, 66, 0.8) 100%);
+            z-index: 1;
+        }
+
+        .dark-theme .top-section::before {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.9) 0%, rgba(46, 204, 113, 0.8) 100%);
+        }
+
+        .top-section-background {
+            width: 100%;
+            height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1562774053-701939374585?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            z-index: 10;
+        }
+
+        .page-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-title i {
+            font-size: 22px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .location-info {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            padding: 0 20px;
+            z-index: 2;
+        }
+
+        .location-name {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .location-date {
+            font-size: 14px;
+            opacity: 0.9;
+            max-width: 400px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        /* Prayer Times Container */
+        .prayer-times-container {
+            padding: 20px 16px 40px;
+            background-color: var(--light-gray);
+            min-height: calc(100vh - 200px);
+        }
+
+        @media (min-width: 768px) {
+            .prayer-times-container {
+                padding: 25px 30px 50px;
+                max-width: 700px;
+                margin: 0 auto;
+            }
+        }
+
+        /* Prayer Cards */
+        .prayer-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .prayer-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .prayer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+            border-color: var(--medium-gray);
+        }
+
+        .dark-theme .prayer-card:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .prayer-card.current {
+            border-left: 4px solid var(--current-prayer);
+            background: linear-gradient(135deg, rgba(29, 111, 66, 0.1) 0%, rgba(29, 111, 66, 0.05) 100%);
+        }
+
+        .dark-theme .prayer-card.current {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.2) 0%, rgba(46, 204, 113, 0.1) 100%);
+        }
+
+        .prayer-card.next {
+            border-left: 4px solid var(--next-prayer);
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+        }
+
+        .dark-theme .prayer-card.next {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.2) 0%, rgba(243, 156, 18, 0.1) 100%);
+        }
+
+        .prayer-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: white;
+            flex-shrink: 0;
+            margin-right: 16px;
+        }
+
+        .prayer-icon.fajr {
+            background: linear-gradient(135deg, #1a237e, #283593);
+        }
+
+        .prayer-icon.sunrise {
+            background: linear-gradient(135deg, #ff6f00, #ff8f00);
+        }
+
+        .prayer-icon.dhuhr {
+            background: linear-gradient(135deg, #0d47a1, #1565c0);
+        }
+
+        .prayer-icon.asr {
+            background: linear-gradient(135deg, #006064, #00838f);
+        }
+
+        .prayer-icon.maghrib {
+            background: linear-gradient(135deg, #6a1b9a, #8e24aa);
+        }
+
+        .prayer-icon.isha {
+            background: linear-gradient(135deg, #311b92, #4527a0);
+        }
+
+        .prayer-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .prayer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .prayer-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .prayer-time {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--prayer-blue);
+        }
+
+        .prayer-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .countdown {
+            font-size: 12px;
+            color: var(--dark-gray);
+            background-color: var(--light-gray);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .adhan-toggle {
+            background: none;
+            border: none;
+            color: var(--dark-gray);
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .adhan-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--primary-green);
+        }
+
+        .adhan-toggle.active {
+            color: var(--primary-green);
+        }
+
+        .prayer-status {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-current {
+            background-color: var(--current-prayer);
+            color: white;
+        }
+
+        .status-next {
+            background-color: var(--next-prayer);
+            color: white;
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--medium-gray);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .modal-title i {
+            font-size: 20px;
+            color: var(--primary-green);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--dark-gray);
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-group {
+            margin-bottom: 20px;
+        }
+
+        .modal-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 12px;
+            font-size: 15px;
+            color: var(--text-dark);
+            background-color: var(--card-bg);
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(29, 111, 66, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .modal-btn.adjust {
+            background: linear-gradient(135deg, var(--primary-green), #4CAF50);
+            color: white;
+            box-shadow: 0 4px 12px rgba(29, 111, 66, 0.2);
+        }
+
+        .modal-btn.adjust:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(29, 111, 66, 0.3);
+        }
+
+        .modal-btn.reset {
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+        }
+
+        .modal-btn.reset:hover {
+            background-color: var(--medium-gray);
+        }
+
+        .adhan-select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 12px;
+            font-size: 15px;
+            color: var(--text-dark);
+            background-color: var(--card-bg);
+            transition: all 0.3s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23757575' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 12px;
+        }
+
+        .adhan-select:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(29, 111, 66, 0.1);
+        }
+
+        .time-adjust-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .adjust-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            font-size: 24px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .adjust-btn.decrease {
+            background: linear-gradient(135deg, #f44336, #e53935);
+        }
+
+        .adjust-btn.increase {
+            background: linear-gradient(135deg, var(--primary-green), #4CAF50);
+        }
+
+        .adjust-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .time-display {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-dark);
+            min-width: 120px;
+            text-align: center;
+        }
+
+        /* Auto Location Indicator */
+        .auto-location {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-top: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Next Prayer Banner */
+        .next-prayer-banner {
+            background: linear-gradient(135deg, var(--next-prayer), #f39c12);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3); }
+            50% { box-shadow: 0 4px 20px rgba(212, 175, 55, 0.5); }
+            100% { box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3); }
+        }
+
+        .next-prayer-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .next-prayer-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .next-prayer-countdown {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+        /* Current Prayer Highlight */
+        .current-prayer-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            background-color: var(--current-prayer);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-left: 10px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .prayer-card {
+                padding: 16px;
+            }
+            
+            .prayer-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
+                margin-right: 12px;
+            }
+            
+            .prayer-name {
+                font-size: 15px;
+            }
+            
+            .prayer-time {
+                font-size: 15px;
+            }
+            
+            .time-display {
+                font-size: 30px;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .prayer-times-container {
+                max-width: 600px;
+            }
+            
+            .prayer-card {
+                padding: 20px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .prayer-times-container {
+                max-width: 700px;
+            }
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <!-- Page Loader -->
+    <div id="pageLoader">
+        <div class="islamic-loader">
+            <div class="loader-crescent">
+                <div class="crescent"></div>
+                <div class="loader-star">
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+            <div class="loader-text">Loading Prayer Times...</div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">
+                    <i class="fas fa-clock"></i>
+                    <span id="modalPrayerName">Fajr Settings</span>
+                </div>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-group">
+                    <label class="modal-label">Adjust Prayer Time (minutes)</label>
+                    <div class="time-adjust-group">
+                        <button class="adjust-btn decrease" id="decreaseTime">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <div class="time-display" id="adjustedTime">04:30</div>
+                        <button class="adjust-btn increase" id="increaseTime">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="modal-group">
+                    <label class="modal-label">Adhan Sound</label>
+                    <select class="adhan-select" id="adhanSoundSelect">
+                        <option value="azan1.mp3">Adhan 1 (Traditional)</option>
+                        <option value="azan2.mp3" selected>Adhan 2 (Default - Egyptian)</option>
+                        <option value="azan3.mp3">Adhan 3 (Turkish)</option>
+                        <option value="azan4.mp3">Adhan 4 (Modern)</option>
+                    </select>
+                </div>
+                
+                <div class="modal-buttons">
+                    <button class="modal-btn reset" id="resetSettings">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                    <button class="modal-btn adjust" id="saveSettings">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-content" id="pageContent">
+            <!-- Top Section -->
+            <section class="top-section">
+                <div class="top-section-background"></div>
+                
+                <div class="top-bar">
+                    <button class="back-btn" id="backBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="page-title">
+                        <i class="fas fa-clock"></i>
+                        <span>Prayer Times</span>
+                    </div>
+                    <div style="width: 40px;"></div> <!-- Spacer for alignment -->
+                </div>
+                
+                <div class="location-info">
+                    <div class="location-name">
+                        <i class="fas fa-location-dot"></i>
+                        <span id="locationText">New York, USA</span>
+                    </div>
+                    <div class="location-date">
+                        <div id="gregorianDate">Friday, April 8, 2024</div>
+                        <div id="hijriDate">25 Ramadan 1445 AH</div>
+                        <div class="auto-location">
+                            <i class="fas fa-satellite"></i>
+                            <span>Auto location enabled</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Next Prayer Banner -->
+            <div class="next-prayer-banner" id="nextPrayerBanner">
+                <div class="next-prayer-info">
+                    <i class="fas fa-bell"></i>
+                    <div>
+                        <div class="next-prayer-name">Next: Dhuhr Prayer</div>
+                        <div class="next-prayer-countdown" id="nextPrayerCountdown">in 2 hours 15 minutes</div>
+                    </div>
+                </div>
+                <div class="prayer-time" id="nextPrayerTime">12:45 PM</div>
+            </div>
+
+            <!-- Prayer Times Container -->
+            <div class="prayer-times-container">
+                <div class="prayer-cards" id="prayerCards">
+                    <!-- Prayer cards will be dynamically generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // PRAYER TIMES APPLICATION
+        // ============================================
+
+        // DOM Elements
+        const pageLoader = document.getElementById('pageLoader');
+        const backBtn = document.getElementById('backBtn');
+        const locationText = document.getElementById('locationText');
+        const gregorianDate = document.getElementById('gregorianDate');
+        const hijriDate = document.getElementById('hijriDate');
+        const prayerCards = document.getElementById('prayerCards');
+        const nextPrayerBanner = document.getElementById('nextPrayerBanner');
+        const nextPrayerCountdown = document.getElementById('nextPrayerCountdown');
+        const nextPrayerTime = document.getElementById('nextPrayerTime');
+        
+        // Modal Elements
+        const settingsModal = document.getElementById('settingsModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalPrayerName = document.getElementById('modalPrayerName');
+        const adjustedTime = document.getElementById('adjustedTime');
+        const decreaseTime = document.getElementById('decreaseTime');
+        const increaseTime = document.getElementById('increaseTime');
+        const adhanSoundSelect = document.getElementById('adhanSoundSelect');
+        const resetSettings = document.getElementById('resetSettings');
+        const saveSettings = document.getElementById('saveSettings');
+
+        // Application State
+        const state = {
+            // User's current location
+            location: {
+                name: "New York, USA",
+                latitude: 40.7128,
+                longitude: -74.0060,
+                autoDetected: true
+            },
+            
+            // Prayer times data
+            prayerTimes: {
+                Fajr: "04:30",
+                Sunrise: "06:15",
+                Dhuhr: "12:45",
+                Asr: "16:20",
+                Maghrib: "19:05",
+                Isha: "20:30"
+            },
+            
+            // Prayer names with icons
+            prayers: [
+                { name: "Fajr", icon: "🕋", timeKey: "Fajr" },
+                { name: "Sunrise", icon: "🌅", timeKey: "Sunrise", optional: true },
+                { name: "Dhuhr", icon: "☀️", timeKey: "Dhuhr" },
+                { name: "Asr", icon: "🌤", timeKey: "Asr" },
+                { name: "Maghrib", icon: "🌇", timeKey: "Maghrib" },
+                { name: "Isha", icon: "🌙", timeKey: "Isha" }
+            ],
+            
+            // User adjustments for each prayer (in minutes)
+            adjustments: {
+                Fajr: 0,
+                Dhuhr: 0,
+                Asr: 0,
+                Maghrib: 0,
+                Isha: 0
+            },
+            
+            // Adhan settings for each prayer
+            adhanSettings: {
+                Fajr: { enabled: true, sound: "azan2.mp3" },
+                Dhuhr: { enabled: true, sound: "azan2.mp3" },
+                Asr: { enabled: true, sound: "azan2.mp3" },
+                Maghrib: { enabled: true, sound: "azan2.mp3" },
+                Isha: { enabled: true, sound: "azan2.mp3" }
+            },
+            
+            // Current prayer tracking
+            currentPrayer: null,
+            nextPrayer: "Dhuhr",
+            
+            // Modal state
+            modalPrayer: null,
+            modalCurrentTime: "04:30",
+            modalAdjustment: 0
+        };
+
+        // Show page loader
+        function showPageLoader() {
+            pageLoader.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Hide page loader
+        function hidePageLoader() {
+            pageLoader.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Format time display
+        function formatTime(timeString) {
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const formattedHour = hour % 12 || 12;
+            return `${formattedHour}:${minutes} ${ampm}`;
+        }
+
+        // Calculate time with adjustment
+        function getAdjustedTime(prayerName) {
+            const baseTime = state.prayerTimes[prayerName];
+            const adjustment = state.adjustments[prayerName] || 0;
+            
+            if (adjustment === 0) return baseTime;
+            
+            const [hours, minutes] = baseTime.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes + adjustment, 0, 0);
+            
+            const adjustedHours = date.getHours().toString().padStart(2, '0');
+            const adjustedMinutes = date.getMinutes().toString().padStart(2, '0');
+            
+            return `${adjustedHours}:${adjustedMinutes}`;
+        }
+
+        // Calculate countdown to next prayer
+        function calculateCountdown(nextPrayerName) {
+            const now = new Date();
+            const nextPrayerTime = getAdjustedTime(nextPrayerName);
+            const [nextHours, nextMinutes] = nextPrayerTime.split(':').map(Number);
+            
+            const nextTime = new Date();
+            nextTime.setHours(nextHours, nextMinutes, 0, 0);
+            
+            // If next prayer is tomorrow (time has passed today)
+            if (nextTime < now) {
+                nextTime.setDate(nextTime.getDate() + 1);
+            }
+            
+            const diffMs = nextTime - now;
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (diffHours > 0) {
+                return `in ${diffHours} hour${diffHours > 1 ? 's' : ''} ${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''}`;
+            } else {
+                return `in ${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''}`;
+            }
+        }
+
+        // Determine current and next prayer
+        function updateCurrentPrayer() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentTime = currentHour * 60 + currentMinute;
+            
+            const prayerTimes = state.prayers
+                .filter(prayer => !prayer.optional)
+                .map(prayer => ({
+                    name: prayer.name,
+                    time: getAdjustedTime(prayer.timeKey),
+                    minutes: getTimeInMinutes(getAdjustedTime(prayer.timeKey))
+                }))
+                .sort((a, b) => a.minutes - b.minutes);
+            
+            let current = null;
+            let next = prayerTimes[0]; // Default to first prayer of the day
+            
+            for (let i = 0; i < prayerTimes.length; i++) {
+                const prayer = prayerTimes[i];
+                const nextPrayer = prayerTimes[(i + 1) % prayerTimes.length];
+                
+                if (currentTime >= prayer.minutes && currentTime < nextPrayer.minutes) {
+                    current = prayer.name;
+                    next = nextPrayer.name;
+                    break;
+                }
+            }
+            
+            // Special case: after Isha and before Fajr
+            if (currentTime >= prayerTimes[prayerTimes.length - 1].minutes) {
+                current = prayerTimes[prayerTimes.length - 1].name;
+                next = prayerTimes[0].name;
+            }
+            
+            state.currentPrayer = current;
+            state.nextPrayer = next;
+            
+            return { current, next };
+        }
+
+        // Convert time string to minutes since midnight
+        function getTimeInMinutes(timeString) {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        // Render prayer cards
+        function renderPrayerCards() {
+            prayerCards.innerHTML = '';
+            
+            const { current, next } = updateCurrentPrayer();
+            const countdownText = calculateCountdown(next);
+            
+            // Update next prayer banner
+            nextPrayerBanner.style.display = 'flex';
+            nextPrayerCountdown.textContent = countdownText;
+            nextPrayerTime.textContent = formatTime(getAdjustedTime(next));
+            
+            state.prayers.forEach(prayer => {
+                const card = document.createElement('div');
+                const isCurrent = prayer.name === current;
+                const isNext = prayer.name === next;
+                const isOptional = prayer.optional;
+                
+                card.className = 'prayer-card';
+                if (isCurrent) card.classList.add('current');
+                if (isNext) card.classList.add('next');
+                
+                const adjustedTime = getAdjustedTime(prayer.timeKey);
+                const adhanEnabled = state.adhanSettings[prayer.timeKey]?.enabled || false;
+                
+                card.innerHTML = `
+                    <div class="prayer-icon ${prayer.name.toLowerCase()}">
+                        <span>${prayer.icon}</span>
+                    </div>
+                    <div class="prayer-content">
+                        <div class="prayer-header">
+                            <div class="prayer-name">
+                                ${prayer.name}
+                                ${isCurrent ? '<span class="current-prayer-indicator">Current</span>' : ''}
+                                ${isNext && !isCurrent ? '<span class="prayer-status status-next">Next</span>' : ''}
+                                ${isOptional ? '<span style="font-size: 10px; color: var(--dark-gray); margin-left: 8px;">(Optional)</span>' : ''}
+                            </div>
+                            <div class="prayer-time">${formatTime(adjustedTime)}</div>
+                        </div>
+                        <div class="prayer-footer">
+                            <div class="countdown">
+                                ${isNext && !isCurrent ? countdownText : '—'}
+                            </div>
+                            <button class="adhan-toggle ${adhanEnabled ? 'active' : ''}" data-prayer="${prayer.timeKey}">
+                                <i class="fas fa-bell${adhanEnabled ? '' : '-slash'}"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add click event to open settings modal
+                if (!prayer.optional) {
+                    card.addEventListener('click', () => openSettingsModal(prayer));
+                }
+                
+                prayerCards.appendChild(card);
+            });
+            
+            // Add adhan toggle functionality
+            document.querySelectorAll('.adhan-toggle').forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const prayerKey = this.getAttribute('data-prayer');
+                    const currentState = state.adhanSettings[prayerKey]?.enabled || false;
+                    state.adhanSettings[prayerKey].enabled = !currentState;
+                    
+                    this.classList.toggle('active');
+                    this.innerHTML = `<i class="fas fa-bell${!currentState ? '' : '-slash'}"></i>`;
+                    
+                    // Save to localStorage
+                    saveToLocalStorage();
+                    
+                    // Show notification
+                    showNotification(`Adhan ${!currentState ? 'enabled' : 'disabled'} for ${prayerKey}`);
+                });
+            });
+        }
+
+        // Open settings modal
+        function openSettingsModal(prayer) {
+            state.modalPrayer = prayer;
+            state.modalCurrentTime = getAdjustedTime(prayer.timeKey);
+            state.modalAdjustment = state.adjustments[prayer.timeKey] || 0;
+            
+            modalPrayerName.textContent = `${prayer.name} Settings`;
+            adjustedTime.textContent = state.modalCurrentTime;
+            
+            // Set current adhan sound
+            const currentSound = state.adhanSettings[prayer.timeKey]?.sound || "azan2.mp3";
+            adhanSoundSelect.value = currentSound;
+            
+            settingsModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close settings modal
+        function closeSettingsModal() {
+            settingsModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            state.modalPrayer = null;
+        }
+
+        // Update time in modal
+        function updateModalTime(delta) {
+            state.modalAdjustment += delta;
+            const [hours, minutes] = state.modalCurrentTime.split(':').map(Number);
+            
+            const date = new Date();
+            date.setHours(hours, minutes + state.modalAdjustment, 0, 0);
+            
+            const adjustedHours = date.getHours().toString().padStart(2, '0');
+            const adjustedMinutes = date.getMinutes().toString().padStart(2, '0');
+            
+            adjustedTime.textContent = `${adjustedHours}:${adjustedMinutes}`;
+        }
+
+        // Save settings
+        function saveSettingsToState() {
+            if (!state.modalPrayer) return;
+            
+            const prayerKey = state.modalPrayer.timeKey;
+            state.adjustments[prayerKey] = state.modalAdjustment;
+            state.adhanSettings[prayerKey].sound = adhanSoundSelect.value;
+            
+            // Save to localStorage
+            saveToLocalStorage();
+            
+            // Update UI
+            renderPrayerCards();
+            closeSettingsModal();
+            
+            showNotification(`${state.modalPrayer.name} settings saved`);
+        }
+
+        // Reset settings for current prayer
+        function resetCurrentPrayerSettings() {
+            if (!state.modalPrayer) return;
+            
+            const prayerKey = state.modalPrayer.timeKey;
+            state.adjustments[prayerKey] = 0;
+            state.modalAdjustment = 0;
+            state.adhanSettings[prayerKey].sound = "azan2.mp3";
+            
+            adjustedTime.textContent = state.prayerTimes[prayerKey];
+            adhanSoundSelect.value = "azan2.mp3";
+            
+            showNotification(`${state.modalPrayer.name} settings reset to default`);
+        }
+
+        // Show notification
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: var(--primary-green);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 3000;
+                font-weight: 500;
+                animation: slideIn 0.3s ease, slideOut 0.3s ease 2s forwards;
+            `;
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove notification after animation
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 2500);
+            
+            // Add keyframe animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Save data to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('prayerAdjustments', JSON.stringify(state.adjustments));
+            localStorage.setItem('adhanSettings', JSON.stringify(state.adhanSettings));
+        }
+
+        // Load data from localStorage
+        function loadFromLocalStorage() {
+            const savedAdjustments = localStorage.getItem('prayerAdjustments');
+            const savedAdhanSettings = localStorage.getItem('adhanSettings');
+            
+            if (savedAdjustments) {
+                state.adjustments = JSON.parse(savedAdjustments);
+            }
+            
+            if (savedAdhanSettings) {
+                state.adhanSettings = JSON.parse(savedAdhanSettings);
+            }
+        }
+
+        // Fetch prayer times from AlAdhan API
+        async function fetchPrayerTimes(lat, lng) {
+            try {
+                showPageLoader();
+                
+                // Using AlAdhan API as requested
+                const response = await fetch(
+                    `https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lng}&method=2`
+                );
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch prayer times');
+                }
+                
+                const data = await response.json();
+                const timings = data.data.timings;
+                
+                // Update prayer times
+                state.prayerTimes = {
+                    Fajr: timings.Fajr,
+                    Sunrise: timings.Sunrise,
+                    Dhuhr: timings.Dhuhr,
+                    Asr: timings.Asr,
+                    Maghrib: timings.Maghrib,
+                    Isha: timings.Isha
+                };
+                
+                // Update date information
+                const gregorian = data.data.date.gregorian;
+                const hijri = data.data.date.hijri;
+                
+                gregorianDate.textContent = `${gregorian.weekday.en}, ${gregorian.month.en} ${gregorian.day}, ${gregorian.year}`;
+                hijriDate.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year} AH`;
+                
+                // Render updated prayer times
+                renderPrayerCards();
+                
+            } catch (error) {
+                console.error('Error fetching prayer times:', error);
+                showNotification('Using default prayer times. Check your connection.');
+            } finally {
+                hidePageLoader();
+            }
+        }
+
+        // Get user's current location
+        function getUserLocation() {
+            if (!navigator.geolocation) {
+                showNotification('Geolocation not supported. Using default location.');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    // Update location in state
+                    state.location.latitude = lat;
+                    state.location.longitude = lng;
+                    state.location.autoDetected = true;
+                    
+                    // Try to get location name using reverse geocoding
+                    try {
+                        const response = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+                        );
+                        const data = await response.json();
+                        
+                        if (data.address) {
+                            const city = data.address.city || data.address.town || data.address.village;
+                            const country = data.address.country;
+                            if (city && country) {
+                                state.location.name = `${city}, ${country}`;
+                                locationText.textContent = state.location.name;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error getting location name:', error);
+                    }
+                    
+                    // Fetch prayer times for this location
+                    await fetchPrayerTimes(lat, lng);
+                    
+                    showNotification('Location updated successfully');
+                },
+                (error) => {
+                    console.error('Error getting location:', error);
+                    showNotification('Could not get location. Using default.');
+                    
+                    // Use default location
+                    fetchPrayerTimes(state.location.latitude, state.location.longitude);
+                }
+            );
+        }
+
+        // Update countdown every minute
+        function startCountdownTimer() {
+            setInterval(() => {
+                renderPrayerCards();
+            }, 60000); // Update every minute
+        }
+
+        // Initialize the application
+        function init() {
+            // Load saved settings
+            loadFromLocalStorage();
+            
+            // Set current date
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            gregorianDate.textContent = now.toLocaleDateString('en-US', options);
+            
+            // Set initial location
+            locationText.textContent = state.location.name;
+            
+            // Render initial prayer cards
+            renderPrayerCards();
+            
+            // Get user location if auto-detection is enabled
+            if (state.location.autoDetected) {
+                getUserLocation();
+            } else {
+                // Use default location
+                fetchPrayerTimes(state.location.latitude, state.location.longitude);
+            }
+            
+            // Start countdown timer
+            startCountdownTimer();
+            
+            // Animate cards on load
+            const cards = document.querySelectorAll('.prayer-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100 + (index * 100));
+            });
+        }
+
+        // Event Listeners
+
+        // Back button
+        backBtn.addEventListener('click', function() {
+            showPageLoader();
+            setTimeout(() => {
+                window.history.back();
+            }, 300);
+        });
+
+        // Modal controls
+        modalClose.addEventListener('click', closeSettingsModal);
+        settingsModal.addEventListener('click', function(e) {
+            if (e.target === settingsModal) {
+                closeSettingsModal();
+            }
+        });
+
+        decreaseTime.addEventListener('click', () => updateModalTime(-1));
+        increaseTime.addEventListener('click', () => updateModalTime(1));
+
+        resetSettings.addEventListener('click', resetCurrentPrayerSettings);
+        saveSettings.addEventListener('click', saveSettingsToState);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Close modal with Escape
+            if (e.key === 'Escape' && settingsModal.classList.contains('active')) {
+                closeSettingsModal();
+            }
+        });
+
+        // Hide loader when page is fully loaded
+        window.addEventListener('load', function() {
+            setTimeout(hidePageLoader, 100);
+        });
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
