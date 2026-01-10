@@ -643,7 +643,7 @@
             background-color: var(--medium-gray);
         }
 
-        .adhan-select {
+        .adhan-select, .method-select {
             width: 100%;
             padding: 14px 16px;
             border: 1px solid var(--medium-gray);
@@ -659,7 +659,7 @@
             background-size: 12px;
         }
 
-        .adhan-select:focus {
+        .adhan-select:focus, .method-select:focus {
             outline: none;
             border-color: var(--primary-green);
             box-shadow: 0 0 0 2px rgba(29, 111, 66, 0.1);
@@ -829,6 +829,22 @@
             animation: fadeIn 0.5s ease;
         }
 
+        /* Method Info */
+        .method-info {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* Manual Location */
+        .manual-location-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px dashed var(--medium-gray);
+            border-radius: 12px;
+        }
+
         /* Responsive Design */
         @media (max-width: 480px) {
             .prayer-card {
@@ -925,12 +941,41 @@
                 </div>
                 
                 <div class="modal-group">
+                    <label class="modal-label">Calculation Method</label>
+                    <select class="method-select" id="calculationMethod">
+                        <option value="2">Egyptian General Authority</option>
+                        <option value="3" selected>Karachi University (Recommended)</option>
+                        <option value="5">Umm Al-Qura, Makkah</option>
+                        <option value="12">Muslim World League</option>
+                        <option value="13">Islamic Society of North America</option>
+                        <option value="1">University of Islamic Sciences, Karachi</option>
+                        <option value="7">Institute of Geophysics, University of Tehran</option>
+                        <option value="8">Gulf Region</option>
+                        <option value="9">Kuwait</option>
+                        <option value="10">Qatar</option>
+                        <option value="14">Egypt (Bohairi)</option>
+                    </select>
+                    <div class="method-info" id="methodInfo">Karachi method works best for most international locations</div>
+                </div>
+                
+                <div class="modal-group">
+                    <label class="modal-label">School of Thought</label>
+                    <select class="method-select" id="schoolOfThought">
+                        <option value="0">Hanafi</option>
+                        <option value="1" selected>Shafi/Maliki/Hanbali</option>
+                    </select>
+                    <div class="method-info">Affects Asr prayer time calculation</div>
+                </div>
+                
+                <div class="modal-group">
                     <label class="modal-label">Adhan Sound</label>
                     <select class="adhan-select" id="adhanSoundSelect">
                         <option value="https://www.islamcan.com/audio/adhan/azan1.mp3">Adhan 1</option>
                         <option value="https://www.islamcan.com/audio/adhan/azan2.mp3" selected>Adhan 2 (Default)</option>
                         <option value="https://www.islamcan.com/audio/adhan/azan3.mp3">Adhan 3</option>
                         <option value="https://www.islamcan.com/audio/adhan/azan4.mp3">Adhan 4</option>
+                        <option value="https://download.tvquran.com/download/adhan/AbdulBaset/Makkah/mp3/64/001.mp3">Makkah Adhan</option>
+                        <option value="https://download.tvquran.com/download/adhan/MisharyAlAfasy/mp3/64/001.mp3">Medina Adhan</option>
                     </select>
                     
                     <!-- Audio Player -->
@@ -946,9 +991,22 @@
                     </button>
                 </div>
                 
+                <div class="manual-location-container">
+                    <label class="modal-label">Manual Location Search</label>
+                    <input type="text" id="manualCity" class="modal-input" placeholder="Enter city name (e.g., Lagos, Nigeria)">
+                    <div class="modal-buttons" style="margin-top: 10px;">
+                        <button class="modal-btn reset" id="clearManualLocation">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                        <button class="modal-btn adjust" id="useManualLocation">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </div>
+                
                 <div class="modal-buttons">
                     <button class="modal-btn reset" id="resetSettings">
-                        <i class="fas fa-redo"></i> Reset
+                        <i class="fas fa-redo"></i> Reset All
                     </button>
                     <button class="modal-btn adjust" id="saveSettings">
                         <i class="fas fa-save"></i> Save Changes
@@ -1022,7 +1080,7 @@
 
     <script>
         // ============================================
-        // PRAYER TIMES - USING SIMPLE LOCATION METHOD
+        // PRAYER TIMES - ENHANCED FOR ACCURACY
         // ============================================
 
         // DOM Elements
@@ -1047,11 +1105,17 @@
         const adjustedTime = document.getElementById('adjustedTime');
         const decreaseTime = document.getElementById('decreaseTime');
         const increaseTime = document.getElementById('increaseTime');
+        const calculationMethod = document.getElementById('calculationMethod');
+        const schoolOfThought = document.getElementById('schoolOfThought');
+        const methodInfo = document.getElementById('methodInfo');
         const adhanSoundSelect = document.getElementById('adhanSoundSelect');
         const resetSettings = document.getElementById('resetSettings');
         const saveSettings = document.getElementById('saveSettings');
         const adhanAudio = document.getElementById('adhanAudio');
         const playAdhanBtn = document.getElementById('playAdhanBtn');
+        const manualCity = document.getElementById('manualCity');
+        const useManualLocation = document.getElementById('useManualLocation');
+        const clearManualLocation = document.getElementById('clearManualLocation');
 
         // Application State
         const state = {
@@ -1080,10 +1144,28 @@
                 Maghrib: 0,
                 Isha: 0
             },
+            calculationMethod: 3, // Default: Karachi University
+            school: 1, // Default: Shafi/Maliki/Hanbali
             modalPrayer: null,
             countdownInterval: null,
             isRefreshing: false,
-            audioPlaying: false
+            audioPlaying: false,
+            manualLocationUsed: false
+        };
+
+        // Method descriptions
+        const methodDescriptions = {
+            '1': 'University of Islamic Sciences, Karachi',
+            '2': 'Egyptian General Authority of Survey',
+            '3': 'Karachi University (Recommended for international)',
+            '5': 'Umm Al-Qura University, Makkah (Saudi Arabia)',
+            '7': 'Institute of Geophysics, University of Tehran',
+            '8': 'Gulf Region',
+            '9': 'Kuwait',
+            '10': 'Qatar',
+            '12': 'Muslim World League',
+            '13': 'Islamic Society of North America',
+            '14': 'Egypt (Bohairi)'
         };
 
         // Show error message
@@ -1340,6 +1422,11 @@
             modalPrayerName.textContent = `${prayer.name} Settings`;
             adjustedTime.textContent = getAdjustedTime(prayer.timeKey);
             
+            // Set current method and school
+            calculationMethod.value = state.calculationMethod;
+            schoolOfThought.value = state.school;
+            methodInfo.textContent = methodDescriptions[state.calculationMethod] || 'Custom method selected';
+            
             settingsModal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -1387,7 +1474,7 @@
             }
         }
 
-        // Get user's location - SIMPLE AND EFFECTIVE METHOD
+        // Get user's location
         function getUserLocation() {
             console.log("Getting user location...");
             
@@ -1400,6 +1487,13 @@
                         console.log("Using saved location:", locationData);
                         state.location = locationData;
                         locationText.textContent = locationData.name;
+                        
+                        // Check for saved method
+                        const savedMethod = localStorage.getItem('calculationMethod');
+                        const savedSchool = localStorage.getItem('schoolOfThought');
+                        if (savedMethod) state.calculationMethod = parseInt(savedMethod);
+                        if (savedSchool) state.school = parseInt(savedSchool);
+                        
                         fetchPrayerTimes(locationData.latitude, locationData.longitude);
                         return;
                     }
@@ -1408,11 +1502,10 @@
                 }
             }
 
-            // Simple location detection like in your delivery app
+            // Simple location detection
             locationText.textContent = "Detecting your location...";
             
             if (navigator.geolocation) {
-                // Use the SAME settings as your working delivery app
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         console.log("Location success:", position.coords);
@@ -1469,9 +1562,9 @@
                         });
                     },
                     {
-                        enableHighAccuracy: false, // FALSE - same as your working app
-                        timeout: 8000, // 8 seconds timeout
-                        maximumAge: 300000 // 5 minutes cache
+                        enableHighAccuracy: false,
+                        timeout: 8000,
+                        maximumAge: 300000
                     }
                 );
             } else {
@@ -1582,6 +1675,27 @@
             fetchPrayerTimes(state.location.latitude, state.location.longitude);
         }
 
+        // Get coordinates from city name
+        async function getCoordinatesFromCity(cityName) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.length > 0) {
+                        return {
+                            lat: parseFloat(data[0].lat),
+                            lng: parseFloat(data[0].lon),
+                            name: data[0].display_name
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error("Geocoding error:", error);
+            }
+            return null;
+        }
+
         // Update dates
         function updateDates() {
             const now = new Date();
@@ -1620,7 +1734,7 @@
             return `${day} ${month} ${year} AH`;
         }
 
-        // Fetch prayer times
+        // Fetch prayer times with enhanced accuracy
         async function fetchPrayerTimes(lat, lng) {
             try {
                 console.log("Fetching prayer times for:", lat, lng);
@@ -1628,12 +1742,16 @@
                 // Show loading state
                 renderLoadingCards();
                 
-                // Format date for API
-                const today = new Date();
-                const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+                // Get timezone
+                const timezone = await getTimezone(lat, lng);
+                const now = new Date();
+                const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
                 
-                // Use reliable AlAdhan API
-                const apiUrl = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${lat}&longitude=${lng}&method=2&school=1`;
+                console.log(`Using calculation method: ${state.calculationMethod}, school: ${state.school}`);
+                
+                // Build API URL with user-selected parameters
+                const apiUrl = `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${lat}&longitude=${lng}&method=${state.calculationMethod}&school=${state.school}&timezone=${timezone}&tune=0,0,0,0,0,0,0,0,0`;
+                
                 console.log("API URL:", apiUrl);
                 
                 const response = await fetch(apiUrl, {
@@ -1656,15 +1774,31 @@
                 }
                 
                 const timings = data.data.timings;
-                state.prayerTimes = {
-                    Fajr: timings.Fajr,
-                    Dhuhr: timings.Dhuhr,
-                    Asr: timings.Asr,
-                    Maghrib: timings.Maghrib,
-                    Isha: timings.Isha
-                };
                 
-                console.log("Prayer times set:", state.prayerTimes);
+                // Debug: Log all available timings
+                console.log("Available timings:", timings);
+                
+                // Extract the main prayer times
+                const prayerTimes = {
+                    Fajr: timings.Fajr || "05:00",
+                    Dhuhr: timings.Dhuhr || "12:00",
+                    Asr: timings.Asr || "15:30",
+                    Maghrib: timings.Maghrib || "18:00",
+                    Isha: timings.Isha || "19:00"
+                };
+        
+                // Log what we got
+                console.log("Parsed prayer times:", prayerTimes);
+                
+                // Validate times
+                for (const [prayer, time] of Object.entries(prayerTimes)) {
+                    if (!isValidTime(time)) {
+                        console.warn(`Invalid time for ${prayer}: ${time}`);
+                        prayerTimes[prayer] = getFallbackTime(prayer, lat, lng);
+                    }
+                }
+                
+                state.prayerTimes = prayerTimes;
                 
                 // Update dates from API
                 if (data.data.date) {
@@ -1684,18 +1818,45 @@
                 // Start countdown updates
                 startCountdownUpdates();
                 
-                showNotification(`Prayer times loaded for ${state.location.name}`);
+                showNotification(`Prayer times loaded using ${methodDescriptions[state.calculationMethod] || 'selected method'}`);
                 
             } catch (error) {
                 console.error("Error fetching prayer times:", error);
                 
-                // Use fallback prayer times
-                const fallbackTimes = getFallbackPrayerTimes(lat, lng);
+                // Try alternative calculation
+                try {
+                    // Try with different method as fallback
+                    const fallbackMethod = 3; // Karachi
+                    const fallbackApiUrl = `https://api.aladhan.com/v1/timings/${new Date().toISOString().split('T')[0]}?latitude=${lat}&longitude=${lng}&method=${fallbackMethod}&school=1`;
+                    
+                    const fallbackResponse = await fetch(fallbackApiUrl);
+                    const fallbackData = await fallbackResponse.json();
+                    
+                    if (fallbackData.code === 200) {
+                        const timings = fallbackData.data.timings;
+                        state.prayerTimes = {
+                            Fajr: timings.Fajr,
+                            Dhuhr: timings.Dhuhr,
+                            Asr: timings.Asr,
+                            Maghrib: timings.Maghrib,
+                            Isha: timings.Isha
+                        };
+                        
+                        renderPrayerCards();
+                        hideError();
+                        startCountdownUpdates();
+                        showNotification("Used fallback calculation method");
+                        return;
+                    }
+                } catch (altError) {
+                    console.error("Fallback API also failed:", altError);
+                }
+                
+                // Everything failed, use calculated times
+                const fallbackTimes = calculatePrayerTimesManually(lat, lng);
                 state.prayerTimes = fallbackTimes;
                 
-                console.log("Using fallback times:", fallbackTimes);
-                
-                showError("Using approximate prayer times");
+                showError("Using calculated prayer times - check with local mosque");
                 renderPrayerCards();
                 updateDates();
                 startCountdownUpdates();
@@ -1709,9 +1870,30 @@
             }
         }
 
-        // Get fallback prayer times
-        function getFallbackPrayerTimes(lat, lng) {
-            // Base times for Lagos
+        // Get timezone from coordinates
+        async function getTimezone(lat, lng) {
+            try {
+                // Simple timezone estimation based on longitude
+                // 15 degrees longitude = 1 hour timezone difference
+                const timezoneOffset = Math.round(lng / 15);
+                return `UTC${timezoneOffset >= 0 ? '+' : ''}${timezoneOffset}`;
+            } catch (error) {
+                console.log("Timezone estimation failed");
+            }
+            
+            // Fallback to browser timezone
+            return Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+
+        // Helper function to validate time format
+        function isValidTime(timeStr) {
+            if (!timeStr || typeof timeStr !== 'string') return false;
+            const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            return timeRegex.test(timeStr);
+        }
+
+        // Get fallback time based on prayer and location
+        function getFallbackTime(prayer, lat, lng) {
             const baseTimes = {
                 Fajr: "05:20",
                 Dhuhr: "12:45",
@@ -1720,36 +1902,65 @@
                 Isha: "20:00"
             };
             
-            // Adjust based on longitude difference from Lagos
-            const lagosLng = 3.3792;
-            const longitudeDifference = lng - lagosLng;
+            // Adjust based on latitude (approximation)
+            const latitudeAdjustment = Math.round((lat - 6.5) * 4); // 4 minutes per degree
+            const baseTime = baseTimes[prayer];
+            const [hours, minutes] = baseTime.split(':').map(Number);
             
-            // 1 degree longitude ≈ 4 minutes time difference at Nigeria's latitude
-            const timeAdjustment = Math.round(longitudeDifference * 4);
+            let totalMinutes = hours * 60 + minutes + latitudeAdjustment;
+            if (totalMinutes >= 1440) totalMinutes -= 1440;
+            if (totalMinutes < 0) totalMinutes += 1440;
             
-            if (Math.abs(timeAdjustment) > 10) {
-                const adjustedTimes = {};
+            const adjHours = Math.floor(totalMinutes / 60);
+            const adjMinutes = totalMinutes % 60;
+            
+            return `${adjHours.toString().padStart(2, '0')}:${adjMinutes.toString().padStart(2, '0')}`;
+        }
+
+        // Manual prayer time calculation (fallback)
+        function calculatePrayerTimesManually(lat, lng) {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            
+            // Very basic seasonal adjustment
+            let seasonalAdjustment = 0;
+            if (month >= 3 && month <= 5) seasonalAdjustment = 30; // Spring
+            if (month >= 6 && month <= 8) seasonalAdjustment = 60; // Summer
+            if (month >= 9 && month <= 11) seasonalAdjustment = 30; // Autumn
+            
+            // Adjust for latitude
+            const latitudeAdjustment = Math.round((lat - 6.5) * 4);
+            
+            // Base times (for Lagos)
+            const times = {
+                Fajr: "05:30",
+                Dhuhr: "12:30",
+                Asr: "16:00",
+                Maghrib: "18:30",
+                Isha: "19:45"
+            };
+            
+            // Apply adjustments
+            const adjustedTimes = {};
+            for (const [prayer, time] of Object.entries(times)) {
+                const [hours, minutes] = time.split(':').map(Number);
+                let totalMinutes = hours * 60 + minutes + latitudeAdjustment;
                 
-                for (const [prayer, time] of Object.entries(baseTimes)) {
-                    const [hours, minutes] = time.split(':').map(Number);
-                    let totalMinutes = hours * 60 + minutes + timeAdjustment;
-                    
-                    // Handle overflow/underflow
-                    if (totalMinutes >= 1440) totalMinutes -= 1440;
-                    if (totalMinutes < 0) totalMinutes += 1440;
-                    
-                    const adjHours = Math.floor(totalMinutes / 60);
-                    const adjMinutes = totalMinutes % 60;
-                    
-                    adjustedTimes[prayer] = 
-                        adjHours.toString().padStart(2, '0') + ':' + 
-                        adjMinutes.toString().padStart(2, '0');
+                if (prayer === 'Fajr' || prayer === 'Isha') {
+                    totalMinutes += seasonalAdjustment;
                 }
                 
-                return adjustedTimes;
+                if (totalMinutes >= 1440) totalMinutes -= 1440;
+                if (totalMinutes < 0) totalMinutes += 1440;
+                
+                const adjHours = Math.floor(totalMinutes / 60);
+                const adjMinutes = totalMinutes % 60;
+                
+                adjustedTimes[prayer] = `${adjHours.toString().padStart(2, '0')}:${adjMinutes.toString().padStart(2, '0')}`;
             }
             
-            return baseTimes;
+            return adjustedTimes;
         }
 
         // Render loading cards
@@ -1807,6 +2018,7 @@
             
             // Clear saved location
             localStorage.removeItem('prayerLocation');
+            state.manualLocationUsed = false;
             
             // Show loader
             pageLoader.classList.remove('hidden');
@@ -1867,13 +2079,33 @@
                 }
             });
             
+            // Calculation method change
+            calculationMethod.addEventListener('change', function() {
+                const selectedMethod = this.value;
+                state.calculationMethod = parseInt(selectedMethod);
+                methodInfo.textContent = methodDescriptions[selectedMethod] || 'Custom method selected';
+            });
+            
+            // School of thought change
+            schoolOfThought.addEventListener('change', function() {
+                state.school = parseInt(this.value);
+            });
+            
             // Save settings
             saveSettings.addEventListener('click', () => {
                 if (state.modalPrayer) {
+                    // Save adjustments
                     localStorage.setItem('prayerAdjustments', JSON.stringify(state.adjustments));
-                    renderPrayerCards();
+                    
+                    // Save calculation method and school
+                    localStorage.setItem('calculationMethod', state.calculationMethod);
+                    localStorage.setItem('schoolOfThought', state.school);
+                    
+                    // Refresh prayer times with new settings
+                    fetchPrayerTimes(state.location.latitude, state.location.longitude);
+                    
                     closeSettingsModal();
-                    showNotification(`${state.modalPrayer.name} settings saved`);
+                    showNotification("Settings saved and prayer times updated");
                 }
             });
             
@@ -1899,7 +2131,45 @@
                 }
             });
             
-            // Load saved adjustments
+            // Manual location search
+            useManualLocation.addEventListener('click', async function() {
+                const cityName = manualCity.value.trim();
+                if (cityName) {
+                    showNotification(`Searching for ${cityName}...`);
+                    
+                    const coordinates = await getCoordinatesFromCity(cityName);
+                    if (coordinates) {
+                        state.location = {
+                            name: coordinates.name,
+                            latitude: coordinates.lat,
+                            longitude: coordinates.lng,
+                            autoDetected: false
+                        };
+                        
+                        state.manualLocationUsed = true;
+                        locationText.textContent = coordinates.name;
+                        autoLocationIndicator.style.display = 'none';
+                        
+                        // Save to localStorage
+                        localStorage.setItem('prayerLocation', JSON.stringify(state.location));
+                        
+                        fetchPrayerTimes(coordinates.lat, coordinates.lng);
+                        closeSettingsModal();
+                        showNotification(`Location set to ${coordinates.name}`);
+                    } else {
+                        showNotification("Could not find location. Please try a different city name.");
+                    }
+                }
+            });
+            
+            // Clear manual location
+            clearManualLocation.addEventListener('click', function() {
+                manualCity.value = '';
+                state.manualLocationUsed = false;
+                showNotification("Manual location cleared");
+            });
+            
+            // Load saved settings
             const savedAdjustments = localStorage.getItem('prayerAdjustments');
             if (savedAdjustments) {
                 try {
@@ -1908,6 +2178,11 @@
                     console.error('Error parsing saved adjustments:', e);
                 }
             }
+            
+            const savedMethod = localStorage.getItem('calculationMethod');
+            const savedSchool = localStorage.getItem('schoolOfThought');
+            if (savedMethod) state.calculationMethod = parseInt(savedMethod);
+            if (savedSchool) state.school = parseInt(savedSchool);
             
             // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
@@ -1918,6 +2193,18 @@
                     e.preventDefault();
                     refreshLocation();
                 }
+                if (e.key === 'm' && e.ctrlKey) {
+                    e.preventDefault();
+                    if (state.prayers.length > 0) {
+                        openSettingsModal(state.prayers[0]);
+                    }
+                }
+            });
+            
+            // Method info update on hover
+            calculationMethod.addEventListener('change', function() {
+                const selectedValue = this.value;
+                methodInfo.textContent = methodDescriptions[selectedValue] || 'Custom method selected';
             });
         }
 
