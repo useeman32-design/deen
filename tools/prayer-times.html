@@ -448,6 +448,8 @@
             border-radius: 12px;
             font-weight: 500;
             font-family: monospace;
+            min-width: 90px;
+            text-align: center;
         }
 
         .adhan-toggle {
@@ -882,6 +884,80 @@
             font-size: 18px;
         }
 
+        /* Adhan Notification Modal */
+        .adhan-notification-modal .modal-content {
+            max-width: 350px;
+            text-align: center;
+        }
+
+        .adhan-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-green), var(--accent-gold));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 36px;
+            color: white;
+        }
+
+        .adhan-notification-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .adhan-notification-text {
+            font-size: 16px;
+            color: var(--dark-gray);
+            margin-bottom: 25px;
+        }
+
+        .adhan-notification-time {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-green);
+            margin-bottom: 25px;
+        }
+
+        .adhan-notification-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .notification-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .notification-btn.play {
+            background: linear-gradient(135deg, var(--primary-green), #4CAF50);
+            color: white;
+        }
+
+        .notification-btn.cancel {
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+        }
+
+        .notification-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
         /* Responsive Design */
         @media (max-width: 480px) {
             .prayer-card {
@@ -925,6 +1001,10 @@
             
             .page-title {
                 font-size: 18px;
+            }
+            
+            .adhan-notification-buttons {
+                flex-direction: column;
             }
         }
 
@@ -1085,6 +1165,28 @@
         </div>
     </div>
 
+    <!-- Adhan Notification Modal -->
+    <div class="modal-overlay adhan-notification-modal" id="adhanNotificationModal">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="adhan-icon">
+                    <i class="fas fa-mosque"></i>
+                </div>
+                <div class="adhan-notification-title" id="notificationPrayerName">Fajr Prayer</div>
+                <div class="adhan-notification-text">It's time for prayer</div>
+                <div class="adhan-notification-time" id="notificationPrayerTime">05:00 AM</div>
+                <div class="adhan-notification-buttons">
+                    <button class="notification-btn cancel" id="cancelAdhanBtn">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button class="notification-btn play" id="playNotificationAdhanBtn">
+                        <i class="fas fa-play"></i> Play Adhan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="page-content" id="pageContent">
             <!-- Top Section -->
@@ -1176,6 +1278,7 @@
         // Modal Elements
         const settingsModal = document.getElementById('settingsModal');
         const calculationSettingsModal = document.getElementById('calculationSettingsModal');
+        const adhanNotificationModal = document.getElementById('adhanNotificationModal');
         const modalClose = document.getElementById('modalClose');
         const calculationModalClose = document.getElementById('calculationModalClose');
         const modalPrayerName = document.getElementById('modalPrayerName');
@@ -1192,6 +1295,10 @@
         const saveCalculationSettings = document.getElementById('saveCalculationSettings');
         const adhanAudio = document.getElementById('adhanAudio');
         const playAdhanBtn = document.getElementById('playAdhanBtn');
+        const cancelAdhanBtn = document.getElementById('cancelAdhanBtn');
+        const playNotificationAdhanBtn = document.getElementById('playNotificationAdhanBtn');
+        const notificationPrayerName = document.getElementById('notificationPrayerName');
+        const notificationPrayerTime = document.getElementById('notificationPrayerTime');
 
         // Application State
         const state = {
@@ -1253,70 +1360,82 @@
             '14': 'Egypt (Bohairi)'
         };
 
-        // Request notification permission
-        async function requestNotificationPermission() {
-            if (!("Notification" in window)) {
-                console.log("This browser does not support notifications");
-                return false;
+        // Load saved data from localStorage
+        function loadSavedData() {
+            // Load location
+            const savedLocation = localStorage.getItem('prayerLocation');
+            if (savedLocation) {
+                try {
+                    state.location = JSON.parse(savedLocation);
+                } catch (e) {
+                    console.error("Error parsing saved location:", e);
+                }
             }
             
-            if (Notification.permission === "granted") {
-                state.notificationPermission = true;
-                return true;
+            // Load adjustments
+            const savedAdjustments = localStorage.getItem('prayerAdjustments');
+            if (savedAdjustments) {
+                try {
+                    state.adjustments = JSON.parse(savedAdjustments);
+                } catch (e) {
+                    console.error('Error parsing saved adjustments:', e);
+                }
             }
             
-            if (Notification.permission !== "denied") {
-                const permission = await Notification.requestPermission();
-                state.notificationPermission = permission === "granted";
-                return state.notificationPermission;
+            // Load muted prayers
+            const savedMutedPrayers = localStorage.getItem('mutedPrayers');
+            if (savedMutedPrayers) {
+                try {
+                    state.mutedPrayers = JSON.parse(savedMutedPrayers);
+                } catch (e) {
+                    console.error('Error parsing muted prayers:', e);
+                }
             }
             
-            return false;
+            // Load calculation settings
+            const savedMethod = localStorage.getItem('calculationMethod');
+            const savedSchool = localStorage.getItem('schoolOfThought');
+            if (savedMethod) state.calculationMethod = parseInt(savedMethod);
+            if (savedSchool) state.school = parseInt(savedSchool);
         }
 
-        // Show browser notification
-        function showBrowserNotification(prayerName, adhanSound) {
-            if (!state.notificationPermission) return;
+        // Save data to localStorage
+        function saveDataToLocalStorage() {
+            // Save location
+            localStorage.setItem('prayerLocation', JSON.stringify(state.location));
             
-            if (state.lastPrayerNotified === prayerName) return;
+            // Save adjustments
+            localStorage.setItem('prayerAdjustments', JSON.stringify(state.adjustments));
             
-            const notification = new Notification(`🕌 ${prayerName} Time`, {
-                body: `It's time for ${prayerName} prayer. Adhan will play now.`,
-                icon: 'https://cdn-icons-png.flaticon.com/512/2206/2206621.png',
-                tag: `prayer-${prayerName}`,
-                requireInteraction: true
-            });
+            // Save muted prayers
+            localStorage.setItem('mutedPrayers', JSON.stringify(state.mutedPrayers));
             
-            state.lastPrayerNotified = prayerName;
-            
-            // Reset notification after 5 minutes
-            setTimeout(() => {
-                state.lastPrayerNotified = null;
-            }, 5 * 60 * 1000);
-            
-            // Play adhan if not muted for this prayer
-            if (!state.mutedPrayers[prayerName]) {
-                playAdhanForPrayer(adhanSound);
-            }
-            
-            notification.onclick = function() {
-                window.focus();
-                this.close();
-            };
+            // Save calculation settings
+            localStorage.setItem('calculationMethod', state.calculationMethod);
+            localStorage.setItem('schoolOfThought', state.school);
         }
 
-        // Play adhan for prayer
-        function playAdhanForPrayer(adhanSound) {
-            if (state.audioPlaying) {
-                stopAdhanAudio();
-            }
+        // Show in-app notification modal
+        function showInAppNotification(prayerName, prayerTime) {
+            // Check if prayer is muted
+            if (state.mutedPrayers[prayerName]) return;
             
-            adhanAudio.src = adhanSound;
-            adhanAudio.play().then(() => {
-                state.audioPlaying = true;
-            }).catch(error => {
-                console.error("Adhan playback error:", error);
-            });
+            // Check if we already showed notification for this prayer today
+            const today = new Date().toDateString();
+            const lastNotifiedKey = `lastNotified_${prayerName}_${today}`;
+            const lastNotified = localStorage.getItem(lastNotifiedKey);
+            
+            if (lastNotified) return;
+            
+            // Show notification modal
+            notificationPrayerName.textContent = `${prayerName} Prayer`;
+            notificationPrayerTime.textContent = formatTime(prayerTime);
+            state.currentNotification = prayerName;
+            
+            adhanNotificationModal.classList.add('active');
+            
+            // Mark as notified for today
+            localStorage.setItem(lastNotifiedKey, 'true');
         }
 
         // Show error message
@@ -1368,7 +1487,7 @@
             return `${formattedHour}:${minutes} ${ampm}`;
         }
 
-        // Format time to 24-hour for display in modal
+        // Format time to 12-hour for display in modal
         function formatTimeForModal(timeString) {
             return formatTime(timeString); // Already in 12-hour format
         }
@@ -1511,7 +1630,7 @@
                 nextPrayerBanner.style.display = 'none';
             }
             
-            // Update countdowns on cards
+            // Update countdowns on cards without re-rendering
             document.querySelectorAll('.prayer-card').forEach(card => {
                 const prayerName = card.querySelector('.prayer-name').textContent.split(' ')[0];
                 const countdownElement = card.querySelector('.countdown');
@@ -1528,6 +1647,10 @@
         function checkPrayerTimeReached() {
             const now = new Date();
             const currentTime = now.getHours() * 60 + now.getMinutes();
+            const currentSeconds = now.getSeconds();
+            
+            // Only check at the start of each minute to avoid multiple notifications
+            if (currentSeconds !== 0) return;
             
             state.prayers.forEach(prayer => {
                 const prayerTime = getAdjustedTime(prayer.timeKey);
@@ -1536,26 +1659,14 @@
                 const [prayerHours, prayerMinutes] = prayerTime.split(':').map(Number);
                 const prayerTimeInMinutes = prayerHours * 60 + prayerMinutes;
                 
-                // Check if current time is within 1 minute of prayer time
-                if (Math.abs(currentTime - prayerTimeInMinutes) <= 1) {
-                    // Check if we haven't notified for this prayer yet today
-                    const today = new Date().toDateString();
-                    const lastNotifiedKey = `lastNotified_${prayer.name}_${today}`;
-                    const lastNotified = localStorage.getItem(lastNotifiedKey);
-                    
-                    if (!lastNotified) {
-                        // Show notification and play adhan
-                        const adhanSound = adhanSoundSelect.value;
-                        showBrowserNotification(prayer.name, adhanSound);
-                        
-                        // Mark as notified for today
-                        localStorage.setItem(lastNotifiedKey, 'true');
-                    }
+                // Check if current time is exactly at prayer time
+                if (currentTime === prayerTimeInMinutes) {
+                    showInAppNotification(prayer.name, prayerTime);
                 }
             });
         }
 
-        // Render prayer cards
+        // Render prayer cards (only once, then update dynamically)
         function renderPrayerCards() {
             prayerCards.innerHTML = '';
             
@@ -1564,6 +1675,7 @@
             state.prayers.forEach(prayer => {
                 const card = document.createElement('div');
                 card.className = 'prayer-card';
+                card.dataset.prayer = prayer.name;
                 
                 const isCurrent = prayer.name === current;
                 const isNext = prayer.name === next;
@@ -1605,26 +1717,42 @@
                     }
                 });
                 
-                // Add click event to bell icon
-                const bellBtn = card.querySelector('.adhan-toggle');
-                bellBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    togglePrayerMute(prayer.name);
-                });
-                
                 prayerCards.appendChild(card);
+            });
+            
+            // Add event listeners to bell icons
+            attachBellIconListeners();
+        }
+
+        // Attach event listeners to bell icons
+        function attachBellIconListeners() {
+            document.querySelectorAll('.adhan-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const prayerName = btn.dataset.prayer;
+                    togglePrayerMute(prayerName, btn);
+                });
             });
         }
 
-        // Toggle prayer mute
-        function togglePrayerMute(prayerName) {
+        // Toggle prayer mute (FIXED: No blinking)
+        function togglePrayerMute(prayerName, buttonElement) {
             state.mutedPrayers[prayerName] = !state.mutedPrayers[prayerName];
+            
+            // Update the specific button without re-rendering the card
+            if (buttonElement) {
+                const icon = buttonElement.querySelector('i');
+                if (state.mutedPrayers[prayerName]) {
+                    buttonElement.classList.add('muted');
+                    icon.className = 'fas fa-bell-slash';
+                } else {
+                    buttonElement.classList.remove('muted');
+                    icon.className = 'fas fa-bell';
+                }
+            }
             
             // Save to localStorage
             localStorage.setItem('mutedPrayers', JSON.stringify(state.mutedPrayers));
-            
-            // Update UI
-            renderPrayerCards();
             
             showNotification(`${prayerName} adhan ${state.mutedPrayers[prayerName] ? 'muted' : 'unmuted'}`);
         }
@@ -1650,12 +1778,14 @@
             document.body.style.overflow = 'hidden';
         }
 
-        // Close settings modal
-        function closeSettingsModal() {
+        // Close all modals
+        function closeAllModals() {
             settingsModal.classList.remove('active');
             calculationSettingsModal.classList.remove('active');
+            adhanNotificationModal.classList.remove('active');
             document.body.style.overflow = 'auto';
             state.modalPrayer = null;
+            state.currentNotification = null;
             
             // Stop audio if playing
             if (state.audioPlaying) {
@@ -1694,44 +1824,34 @@
             }
         }
 
+        // Play adhan from notification
+        function playAdhanFromNotification() {
+            const selectedSound = adhanSoundSelect.value;
+            
+            // Check if prayer is muted
+            if (state.currentNotification && state.mutedPrayers[state.currentNotification]) {
+                showNotification(`${state.currentNotification} adhan is muted`);
+                return;
+            }
+            
+            adhanAudio.src = selectedSound;
+            adhanAudio.play().then(() => {
+                state.audioPlaying = true;
+            }).catch(error => {
+                console.error("Adhan playback error:", error);
+                showNotification("Could not play adhan");
+            });
+            
+            closeAllModals();
+        }
+
         // Get user's location
         function getUserLocation() {
             console.log("Getting user location...");
             
-            // Check if we have saved location
-            const savedLocation = localStorage.getItem('prayerLocation');
-            if (savedLocation && !state.isRefreshing) {
-                try {
-                    const locationData = JSON.parse(savedLocation);
-                    if (locationData.latitude && locationData.longitude && locationData.name) {
-                        console.log("Using saved location:", locationData);
-                        state.location = locationData;
-                        locationText.textContent = locationData.name;
-                        
-                        // Check for saved settings
-                        const savedMethod = localStorage.getItem('calculationMethod');
-                        const savedSchool = localStorage.getItem('schoolOfThought');
-                        const savedMutedPrayers = localStorage.getItem('mutedPrayers');
-                        
-                        if (savedMethod) state.calculationMethod = parseInt(savedMethod);
-                        if (savedSchool) state.school = parseInt(savedSchool);
-                        if (savedMutedPrayers) {
-                            try {
-                                state.mutedPrayers = JSON.parse(savedMutedPrayers);
-                            } catch (e) {
-                                console.error("Error parsing muted prayers:", e);
-                            }
-                        }
-                        
-                        fetchPrayerTimes(locationData.latitude, locationData.longitude);
-                        return;
-                    }
-                } catch (e) {
-                    console.log("Could not load saved location:", e);
-                }
-            }
-
-            // Simple location detection
+            // Load saved data first
+            loadSavedData();
+            
             locationText.textContent = "Detecting your location...";
             
             if (navigator.geolocation) {
@@ -1753,13 +1873,11 @@
                             locationText.textContent = cityName;
                             autoLocationIndicator.style.display = 'inline-flex';
                             
-                            // Save to localStorage
-                            localStorage.setItem('prayerLocation', JSON.stringify(state.location));
+                            // Save data
+                            saveDataToLocalStorage();
                             
                             // Fetch prayer times
                             fetchPrayerTimes(lat, lng);
-                            
-                            showNotification(`Location detected: ${cityName}`);
                         }).catch(error => {
                             console.log("Could not get city name:", error);
                             // Use coordinates if city name fails
@@ -1783,7 +1901,6 @@
                                 state.location = ipLocation;
                                 locationText.textContent = ipLocation.name;
                                 fetchPrayerTimes(ipLocation.latitude, ipLocation.longitude);
-                                showNotification("Using approximate location from IP");
                             } else {
                                 // Everything failed, use default
                                 useDefaultLocation();
@@ -2016,6 +2133,9 @@
                     updateDates();
                 }
                 
+                // Save data to localStorage
+                saveDataToLocalStorage();
+                
                 // Render prayer times
                 renderPrayerCards();
                 hideError();
@@ -2026,7 +2146,8 @@
                 // Start prayer time checking
                 startPrayerTimeChecking();
                 
-                showNotification(`Prayer times loaded using ${methodDescriptions[state.calculationMethod] || 'selected method'}`);
+                // FIXED: Removed the notification message that was showing on page load
+                // Removed: showNotification(`Prayer times loaded using ${methodDescriptions[state.calculationMethod] || 'selected method'}`);
                 
             } catch (error) {
                 console.error("Error fetching prayer times:", error);
@@ -2050,11 +2171,13 @@
                             Isha: timings.Isha
                         };
                         
+                        // Save data
+                        saveDataToLocalStorage();
+                        
                         renderPrayerCards();
                         hideError();
                         startCountdownUpdates();
                         startPrayerTimeChecking();
-                        showNotification("Used fallback calculation method");
                         return;
                     }
                 } catch (altError) {
@@ -2064,6 +2187,9 @@
                 // Everything failed, use calculated times
                 const fallbackTimes = calculatePrayerTimesManually(lat, lng);
                 state.prayerTimes = fallbackTimes;
+                
+                // Save data
+                saveDataToLocalStorage();
                 
                 showError("Using calculated prayer times - check with local mosque");
                 renderPrayerCards();
@@ -2196,7 +2322,6 @@
             state.prayers.forEach(prayer => {
                 const card = document.createElement('div');
                 card.className = 'prayer-card';
-                
                 card.innerHTML = `
                     <div class="prayer-icon ${prayer.name.toLowerCase()}">
                         <span>${prayer.icon}</span>
@@ -2208,13 +2333,12 @@
                         </div>
                         <div class="prayer-footer">
                             <div class="countdown">Loading...</div>
-                            <button class="adhan-toggle">
+                            <button class="adhan-toggle" data-prayer="${prayer.name}">
                                 <i class="fas fa-bell"></i>
                             </button>
                         </div>
                     </div>
                 `;
-                
                 prayerCards.appendChild(card);
             });
         }
@@ -2242,7 +2366,7 @@
             state.isRefreshing = true;
             refreshHeaderBtn.classList.add('loading');
             
-            // Clear saved location
+            // Clear saved prayer times to force refresh
             localStorage.removeItem('prayerLocation');
             
             // Show loader
@@ -2257,9 +2381,6 @@
         // Initialize
         async function init() {
             console.log("Initializing prayer times page...");
-            
-            // Request notification permission
-            await requestNotificationPermission();
             
             // Set up event listeners
             setupEventListeners();
@@ -2288,18 +2409,25 @@
             settingsHeaderBtn.addEventListener('click', openCalculationSettingsModal);
             
             // Modal controls
-            modalClose.addEventListener('click', closeSettingsModal);
-            calculationModalClose.addEventListener('click', closeSettingsModal);
+            modalClose.addEventListener('click', closeAllModals);
+            calculationModalClose.addEventListener('click', closeAllModals);
             
+            // Close modals when clicking outside
             settingsModal.addEventListener('click', function(e) {
                 if (e.target === this) {
-                    closeSettingsModal();
+                    closeAllModals();
                 }
             });
             
             calculationSettingsModal.addEventListener('click', function(e) {
                 if (e.target === this) {
-                    closeSettingsModal();
+                    closeAllModals();
+                }
+            });
+            
+            adhanNotificationModal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeAllModals();
                 }
             });
             
@@ -2337,7 +2465,7 @@
                     localStorage.setItem('prayerAdjustments', JSON.stringify(state.adjustments));
                     
                     renderPrayerCards();
-                    closeSettingsModal();
+                    closeAllModals();
                     showNotification(`${state.modalPrayer.name} settings saved`);
                 }
             });
@@ -2362,8 +2490,8 @@
                     fetchPrayerTimes(state.location.latitude, state.location.longitude);
                 }
                 
-                closeSettingsModal();
-                showNotification("Calculation settings saved and applied");
+                closeAllModals();
+                showNotification("Settings saved and applied");
             });
             
             // Reset calculation settings
@@ -2375,7 +2503,7 @@
                 schoolOfThought.value = state.school;
                 methodInfo.textContent = methodDescriptions[state.calculationMethod];
                 
-                showNotification("Reset to default calculation settings");
+                showNotification("Reset to default settings");
             });
             
             // Adhan audio controls
@@ -2391,51 +2519,23 @@
                 }
             });
             
-            // Load saved settings
-            const savedAdjustments = localStorage.getItem('prayerAdjustments');
-            if (savedAdjustments) {
-                try {
-                    state.adjustments = JSON.parse(savedAdjustments);
-                } catch (e) {
-                    console.error('Error parsing saved adjustments:', e);
-                }
-            }
+            // Notification modal buttons
+            cancelAdhanBtn.addEventListener('click', () => {
+                stopAdhanAudio();
+                closeAllModals();
+            });
             
-            const savedMethod = localStorage.getItem('calculationMethod');
-            const savedSchool = localStorage.getItem('schoolOfThought');
-            const savedMutedPrayers = localStorage.getItem('mutedPrayers');
-            
-            if (savedMethod) state.calculationMethod = parseInt(savedMethod);
-            if (savedSchool) state.school = parseInt(savedSchool);
-            if (savedMutedPrayers) {
-                try {
-                    state.mutedPrayers = JSON.parse(savedMutedPrayers);
-                } catch (e) {
-                    console.error('Error parsing muted prayers:', e);
-                }
-            }
+            playNotificationAdhanBtn.addEventListener('click', playAdhanFromNotification);
             
             // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && (settingsModal.classList.contains('active') || calculationSettingsModal.classList.contains('active'))) {
-                    closeSettingsModal();
+                if (e.key === 'Escape') {
+                    closeAllModals();
                 }
                 if (e.key === 'r' && e.ctrlKey) {
                     e.preventDefault();
                     refreshLocation();
                 }
-                if (e.key === 'm' && e.ctrlKey) {
-                    e.preventDefault();
-                    if (state.prayers.length > 0) {
-                        openSettingsModal(state.prayers[0]);
-                    }
-                }
-            });
-            
-            // Method info update on change
-            calculationMethod.addEventListener('change', function() {
-                const selectedValue = this.value;
-                methodInfo.textContent = methodDescriptions[selectedValue] || 'Custom method selected';
             });
         }
 
