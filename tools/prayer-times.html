@@ -291,14 +291,18 @@
         }
 
         .location-name {
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 22px; /* Reduced from 32px */
+            font-weight: 600; /* Reduced from 700 */
             margin-bottom: 8px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 8px; /* Reduced from 12px */
+        }
+
+        .location-name i {
+            font-size: 20px; /* Reduced from 28px */
         }
 
         .location-date {
@@ -308,6 +312,30 @@
             margin: 0 auto;
             line-height: 1.5;
             margin-top: 10px;
+        }
+
+        .gregorian-date {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .hijri-date {
+            font-size: 14px;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        .auto-location {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-top: 10px;
+            backdrop-filter: blur(5px);
         }
 
         /* Prayer Times Container */
@@ -417,58 +445,35 @@
         .prayer-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 6px;
+            align-items: center;
+            margin-bottom: 8px;
         }
 
         .prayer-name {
-            font-size: 17px; /* Increased from 16px */
-            font-weight: 700; /* Increased from 600 */
+            font-size: 20px;
+            font-weight: 800;
             color: var(--text-dark);
             display: flex;
             align-items: center;
             flex-wrap: wrap;
-            gap: 8px; /* Increased from 6px */
-            flex: 1; /* Fill available space */
-            min-height: 32px; /* Ensure consistent height */
+            gap: 10px;
+            flex: 1;
+            min-height: 36px;
         }
 
         .prayer-time {
-            font-size: 17px; /* Increased from 16px */
-            font-weight: 700;
+            font-size: 20px;
+            font-weight: 800;
             color: var(--prayer-blue);
             text-align: right;
-            min-width: 85px; /* Slightly increased from 80px */
+            min-width: 90px;
             white-space: nowrap;
         }
 
         .prayer-footer {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
-            margin-top: 10px; /* Increased from 8px */
-        }
-
-        .countdown {
-            font-size: 13px; /* Increased from 12px */
-            color: var(--dark-gray);
-            background-color: var(--light-gray);
-            padding: 5px 10px; /* Increased padding */
-            border-radius: 12px;
-            font-weight: 500;
-            font-family: monospace;
-            min-width: 95px; /* Increased from 90px */
-            text-align: center;
-            height: 28px; /* Fixed height */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .countdown.empty {
-            opacity: 0.6; /* Show but faded */
-            background-color: rgba(0, 0, 0, 0.05); /* Light background */
-            color: var(--dark-gray);
         }
 
         .adhan-toggle {
@@ -476,15 +481,15 @@
             border: none;
             color: var(--dark-gray);
             cursor: pointer;
-            font-size: 18px;
+            font-size: 20px;
             transition: all 0.3s;
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0; /* Prevent shrinking */
+            flex-shrink: 0;
         }
 
         .adhan-toggle:hover {
@@ -501,10 +506,10 @@
         }
 
         .prayer-status {
-            font-size: 11px; /* Increased from 10px */
+            font-size: 12px;
             font-weight: 600;
-            padding: 3px 9px; /* Increased from 2px 8px */
-            border-radius: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-left: 8px;
@@ -786,19 +791,6 @@
             background: linear-gradient(135deg, #f44336, #e53935);
         }
 
-        /* Auto Location Indicator */
-        .auto-location {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            background-color: rgba(255, 255, 255, 0.2);
-            padding: 4px 10px;
-            border-radius: 12px;
-            margin-top: 8px;
-            backdrop-filter: blur(5px);
-        }
-
         /* Next Prayer Banner */
         .next-prayer-banner {
             background: linear-gradient(135deg, var(--next-prayer-highlight), #f39c12);
@@ -992,11 +984,11 @@
             }
             
             .prayer-name {
-                font-size: 16px;
+                font-size: 18px;
             }
             
             .prayer-time {
-                font-size: 16px;
+                font-size: 18px;
             }
             
             .time-display {
@@ -1007,12 +999,17 @@
                 bottom: 30px;
             }
             
+            .location-name {
+                font-size: 20px;
+            }
+            
             .top-section {
                 height: 210px;
             }
             
             .prayer-times-container {
                 padding-top: 20px;
+                min-height: calc(100vh - 210px);
             }
             
             .refresh-header-btn, .settings-header-btn {
@@ -1235,8 +1232,8 @@
                         <span id="locationText">Getting your location...</span>
                     </div>
                     <div class="location-date">
-                        <div id="gregorianDate">--</div>
-                        <div id="hijriDate">--</div>
+                        <div class="gregorian-date" id="gregorianDate">--</div>
+                        <div class="hijri-date" id="hijriDate">--</div>
                         <div class="auto-location" id="autoLocationIndicator">
                             <i class="fas fa-satellite"></i>
                             <span>Using your current location</span>
@@ -1377,6 +1374,184 @@
             '13': 'Islamic Society of North America',
             '14': 'Egypt (Bohairi)'
         };
+
+        // ============================================
+        // HIJRI DATE CALCULATION ENGINE
+        // ============================================
+
+        class HijriDateEngine {
+            constructor() {
+                // Hijri Months
+                this.HIJRI_MONTHS = [
+                    "Muḥarram", "Ṣafar", "Rabīʿ al-Awwal", "Rabīʿ al-Thānī",
+                    "Jumādā al-Awwal", "Jumādā al-Thānī", "Rajab", "Shaʿbān",
+                    "Ramaḍān", "Shawwāl", "Dhū al-Qaʿdah", "Dhū al-Ḥijjah"
+                ];
+                
+                // Umm al-Qura calendar constants
+                this.HIJRA_JD = 1948440.5; // Julian Day of Hijra (July 16, 622 CE)
+                this.HIJRI_MONTH_LENGTHS = [30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29];
+                this.LONG_YEARS = [2, 5, 7, 10, 13, 16, 18, 21, 24, 26, 29];
+            }
+
+            // Convert Gregorian to Julian Day
+            gregorianToJulian(year, month, day) {
+                if (month <= 2) {
+                    year -= 1;
+                    month += 12;
+                }
+                const a = Math.floor(year / 100);
+                const b = 2 - a + Math.floor(a / 4);
+                return Math.floor(365.25 * (year + 4716)) + 
+                       Math.floor(30.6001 * (month + 1)) + day + b - 1524.5;
+            }
+
+            // Convert Julian Day to Gregorian
+            julianToGregorian(jd) {
+                const Z = Math.floor(jd + 0.5);
+                const F = jd + 0.5 - Z;
+                const A = Z < 2299161 ? Z : Z + 1 + Math.floor((Z - 1867216.25) / 36524.25);
+                const B = A + 1524;
+                const C = Math.floor((B - 122.1) / 365.25);
+                const D = Math.floor(365.25 * C);
+                const E = Math.floor((B - D) / 30.6001);
+                
+                const day = B - D - Math.floor(30.6001 * E) + F;
+                const month = E < 14 ? E - 1 : E - 13;
+                const year = month > 2 ? C - 4716 : C - 4715;
+                
+                return { year, month, day };
+            }
+
+            // Get Hijri date from Gregorian date (LOCAL CALCULATION - NO API)
+            gregorianToHijri(gregorianDate) {
+                const year = gregorianDate.getFullYear();
+                const month = gregorianDate.getMonth() + 1;
+                const day = gregorianDate.getDate();
+                
+                const jd = this.gregorianToJulian(year, month, day);
+                return this.julianToHijri(jd);
+            }
+
+            // Get Hijri date from Julian Day
+            julianToHijri(jd) {
+                // Days since Hijra epoch
+                const daysSinceEpoch = jd - this.HIJRA_JD;
+                
+                // Approximate Hijri year
+                let hijriYear = Math.floor(daysSinceEpoch / 354.36607) + 1;
+                
+                // Find exact year start
+                let yearStart = this.hijriYearStartJD(hijriYear);
+                
+                // Adjust if before year start
+                if (jd < yearStart) {
+                    hijriYear--;
+                    yearStart = this.hijriYearStartJD(hijriYear);
+                }
+                
+                // Days into year
+                const daysIntoYear = Math.floor(jd - yearStart);
+                
+                // Find month and day
+                let monthDays = 0;
+                let hijriMonth = 0;
+                let hijriDay = 0;
+                
+                const monthLengths = this.getHijriMonthLengths(hijriYear);
+                
+                for (let i = 0; i < 12; i++) {
+                    monthDays += monthLengths[i];
+                    if (daysIntoYear < monthDays) {
+                        hijriMonth = i;
+                        hijriDay = daysIntoYear - (monthDays - monthLengths[i]) + 1;
+                        break;
+                    }
+                }
+                
+                return {
+                    year: hijriYear,
+                    month: hijriMonth,
+                    day: hijriDay,
+                    monthName: this.HIJRI_MONTHS[hijriMonth],
+                    formatted: `${hijriDay} ${this.HIJRI_MONTHS[hijriMonth]} ${hijriYear} AH`
+                };
+            }
+
+            // Get Julian Day for start of Hijri year
+            hijriYearStartJD(hijriYear) {
+                return this.HIJRA_JD + Math.floor((hijriYear - 1) * 354.36607);
+            }
+
+            // Get month lengths for a specific Hijri year
+            getHijriMonthLengths(hijriYear) {
+                const lengths = [...this.HIJRI_MONTH_LENGTHS];
+                
+                // Adjust Dhul-Hijjah for long years
+                const yearInCycle = hijriYear % 30;
+                if (this.LONG_YEARS.includes(yearInCycle)) {
+                    lengths[11] = 30; // Dhul-Hijjah has 30 days
+                }
+                
+                return lengths;
+            }
+
+            // Get formatted date string (from your Hijri calendar)
+            getCurrentHijriDate() {
+                const now = new Date();
+                const hijri = this.gregorianToHijri(now);
+                return hijri.formatted;
+            }
+        }
+
+        // Initialize Hijri Date Engine
+        const hijriEngine = new HijriDateEngine();
+
+        // ============================================
+        // DATE DISPLAY FUNCTIONS (FAST AND IMMEDIATE)
+        // ============================================
+
+        // Show dates immediately on page load
+        function initializeDatesImmediately() {
+            const now = new Date();
+            
+            // Format Gregorian date (IMMEDIATE)
+            const gregorianOptions = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            gregorianDate.textContent = now.toLocaleDateString('en-US', gregorianOptions);
+            
+            // Calculate Hijri date (IMMEDIATE - LOCAL CALCULATION)
+            const hijri = hijriEngine.getCurrentHijriDate();
+            hijriDate.textContent = hijri;
+            
+            // Start date updates
+            startDateUpdates();
+        }
+
+        // Start continuous date updates
+        function startDateUpdates() {
+            // Update dates every minute
+            setInterval(() => {
+                const now = new Date();
+                
+                // Update Gregorian date
+                const gregorianOptions = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                gregorianDate.textContent = now.toLocaleDateString('en-US', gregorianOptions);
+                
+                // Update Hijri date (LOCAL CALCULATION - NO API)
+                const hijri = hijriEngine.getCurrentHijriDate();
+                hijriDate.textContent = hijri;
+            }, 60000); // Update every minute
+        }
 
         // Load saved data from localStorage
         function loadSavedData() {
@@ -1593,7 +1768,7 @@
             return { current, next };
         }
 
-        // Calculate countdown to next prayer with seconds
+        // Calculate countdown to next prayer with seconds (for banner only)
         function calculateCountdownWithSeconds(nextPrayerName) {
             if (!nextPrayerName) return null;
             
@@ -1631,7 +1806,7 @@
             }
         }
 
-        // Update countdowns with seconds
+        // Update countdowns (only for banner)
         function updateCountdowns() {
             const { current, next } = findCurrentAndNextPrayer();
             
@@ -1649,25 +1824,7 @@
                 nextPrayerBanner.style.display = 'none';
             }
             
-            // Update countdowns on cards without re-rendering
-            document.querySelectorAll('.prayer-card').forEach(card => {
-                const prayerName = card.querySelector('.prayer-name').textContent.split(' ')[0];
-                const countdownElement = card.querySelector('.countdown');
-                
-                if (prayerName === state.nextPrayer) {
-                    const countdown = calculateCountdownWithSeconds(prayerName);
-                    if (countdown) {
-                        countdownElement.textContent = countdown;
-                        countdownElement.classList.remove('empty');
-                    } else {
-                        countdownElement.textContent = '--:--:--';
-                        countdownElement.classList.add('empty');
-                    }
-                } else {
-                    countdownElement.textContent = '--:--:--';
-                    countdownElement.classList.add('empty');
-                }
-            });
+            // NO COUNTDOWN UPDATES ON PRAYER CARDS - REMOVED
         }
 
         // Check if prayer time is reached
@@ -1693,7 +1850,7 @@
             });
         }
 
-        // Render prayer cards (only once, then update dynamically)
+        // Render prayer cards (COUNTDOWN COMPLETELY REMOVED)
         function renderPrayerCards() {
             prayerCards.innerHTML = '';
             
@@ -1712,7 +1869,6 @@
                 if (isNext && !isCurrent) card.classList.add('next');
                 
                 const adjustedTime = getAdjustedTime(prayer.timeKey);
-                const countdown = isNext ? calculateCountdownWithSeconds(prayer.name) : null;
                 
                 card.innerHTML = `
                     <div class="prayer-icon ${prayer.name.toLowerCase()}">
@@ -1728,7 +1884,7 @@
                             <div class="prayer-time">${formatTime(adjustedTime)}</div>
                         </div>
                         <div class="prayer-footer">
-                            <div class="countdown ${!countdown ? 'empty' : ''}">${countdown || '--:--:--'}</div>
+                            <!-- COUNTDOWN COMPLETELY REMOVED -->
                             <button class="adhan-toggle ${isMuted ? 'muted' : ''}" data-prayer="${prayer.name}">
                                 <i class="fas ${isMuted ? 'fa-bell-slash' : 'fa-bell'}"></i>
                             </button>
@@ -1886,9 +2042,7 @@
             // Load saved data first
             loadSavedData();
             
-            // Immediately update dates
-            updateDatesImmediately();
-            
+            // Show dates immediately (already done in initializeDatesImmediately)
             locationText.textContent = "Detecting your location...";
             
             if (navigator.geolocation) {
@@ -1898,7 +2052,7 @@
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
                         
-                        // Get city name using reverse geocoding (FIXED CORS ERROR)
+                        // Get city name using reverse geocoding
                         getCityFromCoordinates(lat, lng).then(cityName => {
                             state.location = {
                                 name: cityName,
@@ -1964,44 +2118,7 @@
             }
         }
 
-        // Update dates immediately (without waiting for API)
-        function updateDatesImmediately() {
-            const now = new Date();
-            
-            // Format Gregorian date
-            const gregorianOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            gregorianDate.textContent = now.toLocaleDateString('en-US', gregorianOptions);
-            
-            // Calculate accurate Hijri date
-            const hijriDateStr = calculateAccurateHijriDate(now);
-            hijriDate.textContent = hijriDateStr;
-            
-            // Update time every minute
-            startDateUpdates();
-        }
-
-        // Start date updates
-        function startDateUpdates() {
-            // Clear any existing interval
-            if (state.dateUpdateInterval) {
-                clearInterval(state.dateUpdateInterval);
-            }
-            
-            // Update every minute
-            state.dateUpdateInterval = setInterval(() => {
-                const now = new Date();
-                
-                // Update Gregorian date
-                const gregorianOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                gregorianDate.textContent = now.toLocaleDateString('en-US', gregorianOptions);
-                
-                // Update Hijri date
-                const hijriDateStr = calculateAccurateHijriDate(now);
-                hijriDate.textContent = hijriDateStr;
-            }, 60000); // Update every minute
-        }
-
-        // Get city name from coordinates (FIXED CORS ERROR)
+        // Get city name from coordinates
         async function getCityFromCoordinates(lat, lng) {
             try {
                 // Use a CORS proxy to avoid CORS errors
@@ -2102,28 +2219,6 @@
             fetchPrayerTimes(state.location.latitude, state.location.longitude);
         }
 
-        // Calculate accurate Hijri date
-        function calculateAccurateHijriDate(gregorianDate) {
-            // More accurate Hijri date calculation
-            const hijriAdjustment = -1; // Adjust based on actual moon sighting
-            
-            // Using approximate conversion (this can be improved with a proper library)
-            const hijriYear = 1445 + Math.floor((gregorianDate.getFullYear() - 2023) * 0.97);
-            const hijriMonth = (gregorianDate.getMonth() + hijriAdjustment + 12) % 12;
-            const hijriDay = gregorianDate.getDate();
-            
-            const hijriMonths = [
-                'Muharram', 'Safar', 'Rabiʻ I', 'Rabiʻ II',
-                'Jumada I', 'Jumada II', 'Rajab', 'Shaʻban',
-                'Ramadan', 'Shawwal', 'Dhu al-Qiʻdah', 'Dhu al-Hijjah'
-            ];
-            
-            const month = hijriMonths[hijriMonth];
-            const day = Math.max(1, Math.min(30, hijriDay));
-            
-            return `${day} ${month} ${hijriYear} AH`;
-        }
-
         // Fetch prayer times with enhanced accuracy
         async function fetchPrayerTimes(lat, lng) {
             try {
@@ -2187,14 +2282,7 @@
                 
                 state.prayerTimes = prayerTimes;
                 
-                // Update dates from API (but don't wait for it)
-                if (data.data.date) {
-                    const gregorian = data.data.date.gregorian;
-                    const hijri = data.data.date.hijri;
-                    
-                    gregorianDate.textContent = `${gregorian.weekday.en}, ${gregorian.month.en} ${gregorian.day}, ${gregorian.year}`;
-                    hijriDate.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year} AH`;
-                }
+                // DATES ARE ALREADY SHOWN IMMEDIATELY - No need to update from API
                 
                 // Save data to localStorage
                 saveDataToLocalStorage();
@@ -2203,7 +2291,7 @@
                 renderPrayerCards();
                 hideError();
                 
-                // Start countdown updates
+                // Start countdown updates (only for banner)
                 startCountdownUpdates();
                 
                 // Start prayer time checking
@@ -2374,7 +2462,7 @@
             return adjustedTimes;
         }
 
-        // Render loading cards
+        // Render loading cards (COUNTDOWN COMPLETELY REMOVED)
         function renderLoadingCards() {
             prayerCards.innerHTML = '';
             
@@ -2391,7 +2479,7 @@
                             <div class="prayer-time">--:--</div>
                         </div>
                         <div class="prayer-footer">
-                            <div class="countdown empty">--:--:--</div>
+                            <!-- COUNTDOWN COMPLETELY REMOVED -->
                             <button class="adhan-toggle" data-prayer="${prayer.name}">
                                 <i class="fas fa-bell"></i>
                             </button>
@@ -2402,7 +2490,7 @@
             });
         }
 
-        // Start countdown updates
+        // Start countdown updates (only for banner)
         function startCountdownUpdates() {
             // Clear existing interval
             if (state.countdownInterval) {
@@ -2412,7 +2500,7 @@
             // Update immediately
             updateCountdowns();
             
-            // Update every second for seconds display
+            // Update every second for banner countdown
             state.countdownInterval = setInterval(() => {
                 updateCountdowns();
             }, 1000);
@@ -2440,6 +2528,9 @@
         // Initialize
         async function init() {
             console.log("Initializing prayer times page...");
+            
+            // Show dates immediately (like Hijri calendar)
+            initializeDatesImmediately();
             
             // Set up event listeners
             setupEventListeners();
